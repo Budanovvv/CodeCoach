@@ -73,6 +73,10 @@
 Разбор задачи требует обращения к Claude API: скриншот уходит в Anthropic.
 Это единственное, что покидает компьютер.
 
+## Лицензия
+
+[GPL-3.0](LICENSE) — как и у [Dictate](https://github.com/Budanovvv/Dictate).
+
 ## Стек
 
 Swift, SwiftUI и AppKit. Глобальный хоткей — `CGEventTap`, снимок экрана —

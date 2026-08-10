@@ -79,6 +79,11 @@ final class StatusItemController {
         updates.target = self
         menu.addItem(updates)
 
+        let about = NSMenuItem(
+            title: "О CodeCoach", action: #selector(showAbout), keyEquivalent: "")
+        about.target = self
+        menu.addItem(about)
+
         menu.addItem(.separator())
         let quit = NSMenuItem(
             title: "Выйти из CodeCoach", action: #selector(NSApplication.terminate(_:)),
@@ -92,6 +97,27 @@ final class StatusItemController {
     @objc private func showSettings() { onSettings?() }
     @objc private func showHistory() { onHistory?() }
     @objc private func checkForUpdates() { onCheckUpdates?() }
+
+    @objc private func showAbout() {
+        NSApp.activate(ignoringOtherApps: true)
+        let credits = NSMutableAttributedString(
+            string: "Тренажёр по задачам для технических собеседований\n",
+            attributes: [.font: NSFont.systemFont(ofSize: 11)])
+        credits.append(NSAttributedString(
+            string: "Free & open source · GPL-3.0\n",
+            attributes: [.font: NSFont.systemFont(ofSize: 11)]))
+        credits.append(NSAttributedString(
+            string: "github.com/Budanovvv/CodeCoach",
+            attributes: [.font: NSFont.systemFont(ofSize: 11),
+                         .link: URL(string: "https://github.com/Budanovvv/CodeCoach")!]))
+        credits.append(NSAttributedString(
+            string: "\nMade by Valentyn Budanov",
+            attributes: [.font: NSFont.systemFont(ofSize: 11)]))
+        // Same trick as Dictate: empty .version hides the parenthesised build
+        // number — it is the git commit count, a Sparkle-only technical value
+        // that means nothing to a person.
+        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits, .version: ""])
+    }
     @objc private func openAccessibility() { Permissions.openAccessibilitySettings() }
     @objc private func openScreenRecording() { Permissions.promptOrRevealScreenRecording() }
 }
