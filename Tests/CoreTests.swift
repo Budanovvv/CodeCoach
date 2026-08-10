@@ -217,7 +217,7 @@ final class LocalizationTests: XCTestCase {
         // "one setting drives the prompts too" contract. The rule text itself
         // stays Russian scaffolding; what varies is which language it demands.
         XCTAssertTrue(Prompts.system.contains(Localization.shared.answerRule))
-        XCTAssertTrue(TrainerPrompts.system.contains(Localization.shared.answerRule))
+        XCTAssertTrue(TrainerPrompts.system(age: nil).contains(Localization.shared.answerRule))
     }
 
     func testMachineMarkersStayEnglishInEveryLanguage() {
@@ -299,8 +299,57 @@ final class TrainerTests: XCTestCase {
         XCTAssertTrue(task.contains("NO solution"))
         XCTAssertTrue(task.contains("TITLE:"))
 
-        // Nothing volatile in the system prompt (it is the cacheable prefix).
-        XCTAssertEqual(TrainerPrompts.system, TrainerPrompts.system)
+        // Nothing volatile in the system prompt (it is the cacheable prefix),
+        // and every age register produces its own distinct stable prompt.
+        for age in [nil] + Trainer.AgeBand.allCases.map(Optional.some) {
+            XCTAssertEqual(TrainerPrompts.system(age: age), TrainerPrompts.system(age: age))
+        }
+        XCTAssertNotEqual(TrainerPrompts.system(age: .child), TrainerPrompts.system(age: .adult))
+    }
+
+    func testOnboardingShapesTheProbeButTheProbeWins() {
+        // Size: a never-coder gets a shorter probe; everyone else the full one.
+        XCTAssertEqual(Trainer.probeTopics(for: .never).count, 3)
+        XCTAssertEqual(Trainer.probeTopics(for: .experienced).count, 5)
+        XCTAssertEqual(Trainer.probeTopics(for: nil).count, 5)
+
+        // Seed difficulty and priors follow the claim…
+        XCTAssertEqual(Trainer.probeSeedLevel(for: .never), .notStarted)
+        XCTAssertEqual(Trainer.probeSeedLevel(for: .experienced), .confident)
+        XCTAssertEqual(Trainer.priorLevel(for: .experienced), .confident)
+        XCTAssertEqual(Trainer.priorLevel(for: nil), .notStarted)
+
+        // …but the surprise detector reports when behaviour disagrees, in
+        // either direction, and stays quiet without a claim to compare against.
+        let aced: [Trainer.Topic: Trainer.Verdict] = [
+            .strings: .solved, .functions: .solved, .listsAndTuples: .solved,
+        ]
+        let bombed: [Trainer.Topic: Trainer.Verdict] = [
+            .strings: .failed, .functions: .failed, .listsAndTuples: .failed,
+        ]
+        XCTAssertEqual(Trainer.probeSurprise(selfLevel: .never, verdicts: aced), .higher)
+        XCTAssertEqual(Trainer.probeSurprise(selfLevel: .experienced, verdicts: bombed), .lower)
+        XCTAssertEqual(Trainer.probeSurprise(selfLevel: .basics, verdicts: [
+            .strings: .partial, .functions: .partial, .listsAndTuples: .solved,
+        ]), .asExpected)
+        XCTAssertEqual(Trainer.probeSurprise(selfLevel: nil, verdicts: aced), .asExpected)
+    }
+
+    func testOldProfileJSONStillDecodes() {
+        // Profiles written before onboarding existed have none of the new
+        // fields; they must decode and skip onboarding iff the probe ran.
+        let json = """
+        [{"probeDone":true,"map":{"strings":2},"solved":[]}]
+        """.data(using: .utf8)!
+        let decoded = try? History.makeDecoder().decode([Trainer.Profile].self, from: json)
+        XCTAssertEqual(decoded?.first?.probeDone, true)
+        XCTAssertEqual(decoded?.first?.needsOnboarding, false)
+        XCTAssertNil(decoded?.first?.ageBand)
+
+        var fresh = Trainer.Profile()
+        XCTAssertTrue(fresh.needsOnboarding)
+        fresh.onboardingDone = true
+        XCTAssertFalse(fresh.needsOnboarding)
     }
 
     func testProfileSurvivesRoundTrip() {

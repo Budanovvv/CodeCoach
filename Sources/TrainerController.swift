@@ -24,6 +24,12 @@ final class TrainerController: ObservableObject {
     @Published var currentTopic: Trainer.Topic?
     /// Probe position: nil when past the probe, else index into probeTopics.
     @Published var probeIndex: Int?
+    /// One-shot line after the probe when it disagreed with the
+    /// self-assessment; cleared on the next task.
+    @Published var probeNote: String?
+
+    /// The probe list sized by the self-assessment.
+    var activeProbeTopics: [Trainer.Topic] { Trainer.probeTopics(for: profile.selfLevel) }
 
     /// Verdict of the latest review of the current task; drives the map update
     /// when the learner moves on.
@@ -43,6 +49,36 @@ final class TrainerController: ObservableObject {
 
     var isBusy: Bool { phase == .generating || phase == .responding }
 
+    /// Saves the onboarding answers. Both are optional; the probe corrects
+    /// whatever they claim.
+    func completeOnboarding(age: Trainer.AgeBand?, selfLevel: Trainer.SelfLevel?) {
+        profile.ageBand = age
+        profile.selfLevel = selfLevel
+        profile.onboardingDone = true
+        persist()
+        Log.d("trainer: onboarding age=\(age?.rawValue ?? "-") self=\(selfLevel?.rawValue ?? "-")")
+        nextTask()
+    }
+
+    /// "Set up again": redo onboarding and the probe from scratch. The task
+    /// history stays — it is a log, not configuration.
+    func redoSetup() {
+        guard !isBusy else { return }
+        profile.onboardingDone = false
+        profile.probeDone = false
+        profile.map = [:]
+        probeVerdicts = [:]
+        probeIndex = 0
+        currentTopic = nil
+        taskText = ""
+        responseText = ""
+        codeInput = ""
+        probeNote = nil
+        phase = .idle
+        persist()
+        Log.d("trainer: setup reset")
+    }
+
     var currentTaskTitle: String {
         taskText.split(separator: "\n").first.map {
             $0.replacingOccurrences(of: "TITLE:", with: "").trimmingCharacters(in: .whitespaces)
@@ -59,11 +95,11 @@ final class TrainerController: ObservableObject {
 
         let topic: Trainer.Topic
         if let index = probeIndex {
-            if index >= Trainer.probeTopics.count {
+            if index >= activeProbeTopics.count {
                 finishProbe()
                 topic = Trainer.nextTopic(for: profile)
             } else {
-                topic = Trainer.probeTopics[index]
+                topic = activeProbeTopics[index]
             }
         } else {
             topic = Trainer.nextTopic(for: profile)
@@ -74,12 +110,18 @@ final class TrainerController: ObservableObject {
         taskText = ""
         responseText = ""
         codeInput = ""
+        probeNote = nil
         phase = .generating
         Log.d("trainer: generating topic=\(topic.rawValue) probe=\(probeIndex.map(String.init) ?? "-")")
 
+        // During the probe the difficulty comes from the self-assessment, not
+        // from the (still empty) map.
+        let level = probeIndex != nil
+            ? Trainer.probeSeedLevel(for: profile.selfLevel)
+            : profile.level(of: topic)
         run(collectInto: \.taskText,
             userText: TrainerPrompts.generateTask(
-                topic: topic, level: profile.level(of: topic),
+                topic: topic, level: level,
                 avoidTitles: Trainer.recentTitles(of: profile)),
             imagePNG: nil,
             doneState: .working)
@@ -151,9 +193,26 @@ final class TrainerController: ObservableObject {
     }
 
     private func finishProbe() {
-        profile.map = Trainer.mapFromProbe(probeVerdicts)
+        var map = Trainer.mapFromProbe(probeVerdicts)
+        // Unprobed topics take the self-assessment prior, so an experienced
+        // person is not dragged through OOP from zero. The first real task per
+        // topic corrects it either way.
+        let prior = Trainer.priorLevel(for: profile.selfLevel)
+        for topic in Trainer.Topic.allCases where map[topic.rawValue] == nil {
+            map[topic.rawValue] = prior
+        }
+        profile.map = map
         profile.probeDone = true
         probeIndex = nil
+
+        switch Trainer.probeSurprise(selfLevel: profile.selfLevel, verdicts: probeVerdicts) {
+        case .higher:
+            probeNote = L("The probe showed a higher level than you said — the map follows your actual answers.")
+        case .lower:
+            probeNote = L("The probe showed a lower level than you said — no problem, the map follows your actual answers.")
+        case .asExpected:
+            probeNote = nil
+        }
         persist()
         Log.d("trainer: probe finished, map=\(profile.map.mapValues(\.rawValue))")
     }
@@ -170,7 +229,7 @@ final class TrainerController: ObservableObject {
             var collected = ""
             do {
                 try await ClaudeCodeCLI.run(
-                    system: TrainerPrompts.system, userText: userText,
+                    system: TrainerPrompts.system(age: self.profile.ageBand), userText: userText,
                     imagePNG: imagePNG, model: "sonnet", label: "trainer"
                 ) { [weak self] event in
                     guard case .text(let text) = event else { return }

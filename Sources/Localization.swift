@@ -80,6 +80,28 @@ final class Localization: ObservableObject {
     // MARK: - Tables (English key → translation)
 
     static let ru: [String: String] = [
+        "Under 13": "До 12",
+        "13–17": "13–17",
+        "Adult": "Взрослый",
+        "Prefer not to say": "Не указывать",
+        "Never wrote code": "Никогда не писал код",
+        "Tried it, know the basics": "Пробовал, знаю основы",
+        "Write confidently": "Пишу уверенно",
+        "Experienced developer": "Опытный разработчик",
+        "Quick setup": "Быстрая настройка",
+        "Two optional questions to pick the right tone and difficulty. A short probe follows and adjusts everything to your actual level.":
+            "Два необязательных вопроса, чтобы подобрать тон и сложность. Дальше — короткая проба, она подстроит всё под твой реальный уровень.",
+        "Age (optional)": "Возраст (необязательно)",
+        "How well do you know Python? (optional)": "Насколько хорошо ты знаешь Python? (необязательно)",
+        "Everything stays on this Mac and is used only to pick the tone and task difficulty.":
+            "Всё остаётся на этом Mac и используется только для подбора тона и сложности задач.",
+        "Set up again: age, level and a fresh probe": "Настроить заново: возраст, уровень и новая проба",
+        "The probe showed a higher level than you said — the map follows your actual answers.":
+            "Проба показала уровень выше заявленного — карта настроена по твоим реальным ответам.",
+        "The probe showed a lower level than you said — no problem, the map follows your actual answers.":
+            "Проба показала уровень ниже заявленного — не страшно, карта настроена по твоим реальным ответам.",
+        "A few short tasks to see what you already know. Write code right here in the field below; when ready, hit “Check”.":
+            "Несколько коротких задач, чтобы понять, что ты уже знаешь. Пиши код прямо здесь, в поле ниже; когда готов — жми «Проверить».",
         "Task":
             "Задача",
         "Solve the problem":
@@ -327,6 +349,28 @@ final class Localization: ObservableObject {
     ]
 
     static let uk: [String: String] = [
+        "Under 13": "До 12",
+        "13–17": "13–17",
+        "Adult": "Дорослий",
+        "Prefer not to say": "Не вказувати",
+        "Never wrote code": "Ніколи не писав код",
+        "Tried it, know the basics": "Пробував, знаю основи",
+        "Write confidently": "Пишу впевнено",
+        "Experienced developer": "Досвідчений розробник",
+        "Quick setup": "Швидке налаштування",
+        "Two optional questions to pick the right tone and difficulty. A short probe follows and adjusts everything to your actual level.":
+            "Два необов'язкові запитання, щоб підібрати тон і складність. Далі — коротка проба, вона підлаштує все під твій реальний рівень.",
+        "Age (optional)": "Вік (необов'язково)",
+        "How well do you know Python? (optional)": "Наскільки добре ти знаєш Python? (необов'язково)",
+        "Everything stays on this Mac and is used only to pick the tone and task difficulty.":
+            "Усе лишається на цьому Mac і використовується лише для підбору тону та складності задач.",
+        "Set up again: age, level and a fresh probe": "Налаштувати заново: вік, рівень і нова проба",
+        "The probe showed a higher level than you said — the map follows your actual answers.":
+            "Проба показала рівень вищий за заявлений — карта налаштована за твоїми реальними відповідями.",
+        "The probe showed a lower level than you said — no problem, the map follows your actual answers.":
+            "Проба показала рівень нижчий за заявлений — не страшно, карта налаштована за твоїми реальними відповідями.",
+        "A few short tasks to see what you already know. Write code right here in the field below; when ready, hit “Check”.":
+            "Кілька коротких задач, щоб зрозуміти, що ти вже знаєш. Пиши код просто тут, у полі нижче; коли готовий — тисни «Перевірити».",
         "Task":
             "Задача",
         "Solve the problem":

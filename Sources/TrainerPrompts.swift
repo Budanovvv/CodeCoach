@@ -1,33 +1,61 @@
 import Foundation
 
 /// Prompt text for the trainer mode. A separate voice from Prompts.swift: the
-/// interview ladder briefs a candidate, this one teaches a 12-year-old. The
+/// interview ladder briefs a candidate, this one teaches a learner. The
 /// same product discipline holds — and harder: a review must never leak the
 /// solution, because for a learner a leaked solution ends the learning.
 /// English scaffolding (the base language); the answer language follows the
 /// app-language setting via the injected rule.
 enum TrainerPrompts {
 
-    /// Stable across every trainer request. Nothing volatile may go in here —
-    /// the answer-language rule is stable for as long as the setting is.
-    static var system: String { """
-    You are a patient Python mentor for a 12-year-old. He is learning, and his \
-    knowledge is patchy: some things he knows well, some he has never seen. \
-    Your job is that he FIGURES THINGS OUT himself, with you steering.
+    /// Stable across every trainer request for a given profile. Nothing
+    /// volatile may go in here — the answer-language rule and the age register
+    /// are stable for as long as the settings are.
+    static func system(age: Trainer.AgeBand?) -> String {
+        let register: String
+        switch age {
+        case .some(.child):
+            register = """
+            The learner is a child under 13. Very simple words, short sentences, \
+            playful tone — but never babyish. Tasks are about play: games, \
+            animals, sweets, school adventures.
+            """
+        case .some(.teen):
+            register = """
+            The learner is a teenager. Friendly and direct, no talking down. \
+            Tasks are about things a teenager relates to: games, messages, \
+            school, music, sport — not warehouses and bookkeeping.
+            """
+        case .some(.adult):
+            register = """
+            The learner is an adult. Plain, respectful, never condescending. \
+            Tasks come from everyday life, hobbies and small practical tools.
+            """
+        case .none:
+            register = """
+            The learner's age is unknown. Neutral, friendly tone that works for \
+            anyone. Tasks about everyday things: messages, games, lists, music.
+            """
+        }
+        return """
+        You are a patient Python mentor. The learner's knowledge is patchy: \
+        some things they know well, some they have never seen. Your job is that \
+        they FIGURE THINGS OUT themselves, with you steering.
 
-    Rules:
-    - \(Localization.shared.answerRule) Write friendly and short, without baby \
-    talk. Code and function names stay in English.
-    - Never shame mistakes. A mistake is material to examine, not a failure.
-    - Answer densely: the reply is read in a small window.
-    - Code always goes in triple backticks with a language tag.
-    - Tasks must be about things a teenager relates to: games, messages, \
-    school, music, sport — not warehouses and bookkeeping.
+        \(register)
 
-    You receive four kinds of requests: invent a task, check a solution, give a \
-    hint, show the solution. Stay strictly within the request — running ahead \
-    takes away the learner's chance to figure it out.
-    """ }
+        Rules:
+        - \(Localization.shared.answerRule) Code and function names stay in \
+        English.
+        - Never shame mistakes. A mistake is material to examine, not a failure.
+        - Answer densely: the reply is read in a small window.
+        - Code always goes in triple backticks with a language tag.
+
+        You receive four kinds of requests: invent a task, check a solution, \
+        give a hint, show the solution. Stay strictly within the request — \
+        running ahead takes away the learner's chance to figure it out.
+        """
+    }
 
     /// Task generation. The answer is shown to the learner as-is, so the format
     /// contract (TITLE first) doubles as the UI parser's contract.
@@ -53,7 +81,7 @@ enum TrainerPrompts {
 
         The answer format — exactly this:
         TITLE: <a short task name>
-        <the statement in 2–5 sentences a teenager understands>
+        <the statement in 2–5 sentences the learner easily understands>
 
         Example:
         <input and expected output, in a code block>

@@ -63,21 +63,114 @@ enum Trainer {
         let verdict: String
     }
 
+    /// Age register — bands, not a number: the prompt only needs the tone, and
+    /// a public app should not collect a child's exact age it has no use for.
+    enum AgeBand: String, Codable, CaseIterable {
+        case child, teen, adult
+
+        var title: String {
+            switch self {
+            case .child: return L("Under 13")
+            case .teen: return L("13–17")
+            case .adult: return L("Adult")
+            }
+        }
+    }
+
+    /// Self-assessed Python level. A hypothesis, never a verdict: it picks the
+    /// probe's size and starting difficulty and seeds unprobed topics — the
+    /// probe's actual results always win.
+    enum SelfLevel: String, Codable, CaseIterable {
+        case never, basics, confident, experienced
+
+        var title: String {
+            switch self {
+            case .never: return L("Never wrote code")
+            case .basics: return L("Tried it, know the basics")
+            case .confident: return L("Write confidently")
+            case .experienced: return L("Experienced developer")
+            }
+        }
+    }
+
     struct Profile: Codable {
         var probeDone: Bool = false
         var map: [String: Level] = [:]
         var solved: [SolvedTask] = []
+        // Optional so profiles written before onboarding existed still decode.
+        var ageBand: AgeBand?
+        var selfLevel: SelfLevel?
+        var onboardingDone: Bool?
 
         func level(of topic: Topic) -> Level { map[topic.rawValue] ?? .notStarted }
         mutating func set(_ topic: Topic, to level: Level) { map[topic.rawValue] = level }
+
+        /// Profiles that already ran the probe predate onboarding and skip it.
+        var needsOnboarding: Bool { !(onboardingDone ?? false) && !probeDone }
     }
 
-    /// The probe: five quick tasks over the core topics, easy difficulty. Its
-    /// job is a first sketch of the map, not an exam — OOP and errors are left
-    /// at "not started" until regular training reaches them.
+    /// The probe: quick tasks over the core topics. Its job is a first sketch
+    /// of the map, not an exam.
     static let probeTopics: [Topic] = [
         .typesAndVariables, .strings, .conditionsAndLoops, .listsAndTuples, .functions,
     ]
+
+    /// Probe size follows the self-assessment: someone who never wrote code
+    /// gets three tasks, not five — the probe must not feel like an exam they
+    /// are failing.
+    static func probeTopics(for selfLevel: SelfLevel?) -> [Topic] {
+        selfLevel == SelfLevel.never ? Array(probeTopics.prefix(3)) : probeTopics
+    }
+
+    /// The difficulty the probe's tasks are generated at. A confident coder
+    /// probed with print("hi") learns nothing and gets bored; a beginner
+    /// probed at medium gets crushed.
+    static func probeSeedLevel(for selfLevel: SelfLevel?) -> Level {
+        switch selfLevel {
+        case .confident, .experienced: return .confident
+        case .basics: return .started
+        default: return .notStarted
+        }
+    }
+
+    /// The prior for topics the probe did not touch (OOP, errors…): claimed
+    /// experience keeps the schedule from dragging an experienced person
+    /// through the basics, and nothing more — the first real task per topic
+    /// corrects it.
+    static func priorLevel(for selfLevel: SelfLevel?) -> Level {
+        switch selfLevel {
+        case .experienced: return .confident
+        case .confident: return .started
+        default: return .notStarted
+        }
+    }
+
+    /// Did the probe agree with the self-assessment? Behavioral evidence wins
+    /// either way; this only decides whether to say a friendly line about it.
+    enum ProbeSurprise { case asExpected, higher, lower }
+
+    static func probeSurprise(
+        selfLevel: SelfLevel?, verdicts: [Topic: Verdict]
+    ) -> ProbeSurprise {
+        guard let selfLevel, !verdicts.isEmpty else { return .asExpected }
+        let score = verdicts.values.reduce(0.0) {
+            switch $1 {
+            case .solved: return $0 + 2
+            case .partial: return $0 + 1
+            case .failed: return $0
+            }
+        } / Double(verdicts.count)
+        let expected: Double
+        switch selfLevel {
+        case .never: expected = 0.4
+        case .basics: expected = 1.0
+        case .confident: expected = 1.5
+        case .experienced: expected = 1.8
+        }
+        if score - expected >= 0.7 { return .higher }
+        if expected - score >= 0.7 { return .lower }
+        return .asExpected
+    }
 
     /// Which topic the next task should train: the weakest not-yet-mastered
     /// one, ties broken by teaching order. Simple on purpose — the fancy

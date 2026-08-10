@@ -8,6 +8,51 @@ struct TrainerView: View {
     @ObservedObject private var loc = Localization.shared
 
     var body: some View {
+        if controller.profile.needsOnboarding {
+            onboarding
+                .padding(20)
+                .frame(minWidth: 560, idealWidth: 660, minHeight: 540, idealHeight: 720)
+        } else {
+            main
+        }
+    }
+
+    /// Two optional questions and a start button — deliberately nothing more.
+    /// Both answers only tune the starting point; the probe's results win.
+    private var onboarding: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(L("Quick setup")).font(.system(size: 16, weight: .semibold))
+            Text(L("Two optional questions to pick the right tone and difficulty. A short probe follows and adjusts everything to your actual level."))
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Picker(L("Age (optional)"), selection: $onboardingAge) {
+                Text(L("Prefer not to say")).tag(Trainer.AgeBand?.none)
+                ForEach(Trainer.AgeBand.allCases, id: \.self) { band in
+                    Text(band.title).tag(Trainer.AgeBand?.some(band))
+                }
+            }
+            Picker(L("How well do you know Python? (optional)"), selection: $onboardingLevel) {
+                Text(L("Prefer not to say")).tag(Trainer.SelfLevel?.none)
+                ForEach(Trainer.SelfLevel.allCases, id: \.self) { level in
+                    Text(level.title).tag(Trainer.SelfLevel?.some(level))
+                }
+            }
+
+            Text(L("Everything stays on this Mac and is used only to pick the tone and task difficulty."))
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+
+            Button(L("Start")) {
+                controller.completeOnboarding(age: onboardingAge, selfLevel: onboardingLevel)
+            }
+            .keyboardShortcut(.defaultAction)
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var main: some View {
         VStack(alignment: .leading, spacing: 12) {
             topicMap
             Divider()
@@ -22,6 +67,9 @@ struct TrainerView: View {
         .padding(16)
         .frame(minWidth: 560, idealWidth: 660, minHeight: 540, idealHeight: 720)
     }
+
+    @State private var onboardingAge: Trainer.AgeBand?
+    @State private var onboardingLevel: Trainer.SelfLevel?
 
     private var hasTask: Bool {
         switch controller.phase {
@@ -50,11 +98,27 @@ struct TrainerView: View {
             HStack {
                 Text(controller.probeIndex != nil ? L("Getting to know you") : L("Knowledge map"))
                     .font(.system(size: 12, weight: .semibold))
+                Spacer()
+                Button {
+                    controller.redoSetup()
+                } label: {
+                    Image(systemName: "arrow.counterclockwise").font(.system(size: 10))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.tertiary)
+                .disabled(controller.isBusy)
+                .help(L("Set up again: age, level and a fresh probe"))
                 if let index = controller.probeIndex {
-                    Text(LF("task %d of %d", min(index + 1, Trainer.probeTopics.count), Trainer.probeTopics.count))
+                    Text(LF("task %d of %d", min(index + 1, controller.activeProbeTopics.count), controller.activeProbeTopics.count))
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
+            }
+            if let note = controller.probeNote {
+                Text(note)
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             // Chips wrap on narrow widths instead of clipping.
             FlowLayout(spacing: 6) {
@@ -99,7 +163,7 @@ struct TrainerView: View {
                 switch controller.phase {
                 case .idle:
                     Text(controller.probeIndex != nil
-                         ? L("Five short tasks to see what you already know. Write code right here in the field below; when ready, hit “Check”.")
+                         ? L("A few short tasks to see what you already know. Write code right here in the field below; when ready, hit “Check”.")
                          : L("Hit “Next” to get a task at your level."))
                         .font(.system(size: 13))
                         .foregroundStyle(.secondary)
