@@ -38,25 +38,24 @@ final class ClaudeClient {
         var errorDescription: String? {
             switch self {
             case .noCredentials:
-                return "Нет доступа к Claude — установите Claude Code (подписка) "
-                    + "или введите ключ API в настройках CodeCoach"
+                return L("Нет доступа к Claude — установите Claude Code (подписка) или введите ключ API в настройках CodeCoach")
             case .http(let status, let message):
                 switch status {
-                case 401: return "Ключ не принят (401) — проверьте его в настройках"
-                case 403: return "Доступ запрещён (403) — нет прав на эту модель"
-                case 429: return "Слишком много запросов (429) — подождите немного"
+                case 401: return L("Ключ не принят (401) — проверьте его в настройках")
+                case 403: return L("Доступ запрещён (403) — нет прав на эту модель")
+                case 429: return L("Слишком много запросов (429) — подождите немного")
                 case 400 where message.localizedCaseInsensitiveContains("retention"):
                     // Fable 5 requires 30-day retention and rejects every request
                     // from a zero-data-retention org, with a payload that looks fine.
-                    return "Модель недоступна при нулевом хранении данных в организации (нужно 30 дней)"
-                case 500...599: return "Сбой на стороне API (\(status)) — попробуйте ещё раз"
-                default: return "Ошибка API (\(status)): \(message)"
+                    return L("Модель недоступна при нулевом хранении данных в организации (нужно 30 дней)")
+                case 500...599: return LF("Сбой на стороне API (%d) — попробуйте ещё раз", status)
+                default: return LF("Ошибка API (%d): %@", status, message)
                 }
             case .refused(let explanation):
-                return explanation.map { "Модель отклонила запрос: \($0)" }
-                    ?? "Модель отклонила запрос по правилам безопасности"
+                return explanation.map { LF("Модель отклонила запрос: %@", $0) }
+                    ?? L("Модель отклонила запрос по правилам безопасности")
             case .transport(let message):
-                return "Нет связи с API: \(message)"
+                return LF("Нет связи с API: %@", message)
             case .cli(let message):
                 return message
             }

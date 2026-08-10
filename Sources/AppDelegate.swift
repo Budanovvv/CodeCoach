@@ -105,7 +105,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let view = SettingsView { [weak self] code, name in
             self?.applyHotkey(code: code, name: name)
         }
-        let window = makeWindow(title: "Настройки CodeCoach", content: AnyView(view))
+        let window = makeWindow(title: L("Настройки CodeCoach"), content: AnyView(view))
         settingsWindow = window
         present(window)
     }
@@ -115,7 +115,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             present(historyWindow)
             return
         }
-        let window = makeWindow(title: "История разборов", content: AnyView(HistoryView()))
+        let window = makeWindow(title: L("История разборов"), content: AnyView(HistoryView()))
         historyWindow = window
         present(window)
     }
@@ -128,7 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let controller = trainerController ?? TrainerController()
         trainerController = controller
         let window = makeWindow(
-            title: "Тренировка Python", content: AnyView(TrainerView(controller: controller)))
+            title: L("Тренировка Python"), content: AnyView(TrainerView(controller: controller)))
         trainerWindow = window
         present(window)
     }

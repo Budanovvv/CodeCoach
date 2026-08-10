@@ -12,9 +12,9 @@ enum HintLevel: Int, CaseIterable, Comparable {
 
     var title: String {
         switch self {
-        case .nudge: return "Намёк"
-        case .approach: return "Подход"
-        case .solution: return "Решение"
+        case .nudge: return L("Намёк")
+        case .approach: return L("Подход")
+        case .solution: return L("Решение")
         }
     }
 

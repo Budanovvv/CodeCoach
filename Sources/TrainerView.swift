@@ -5,6 +5,7 @@ import SwiftUI
 /// editor — this window is the assignment and the feedback, not an IDE.
 struct TrainerView: View {
     @ObservedObject var controller: TrainerController
+    @ObservedObject private var loc = Localization.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -31,7 +32,7 @@ struct TrainerView: View {
 
     private var editor: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Твой код")
+            Text(L("Твой код"))
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)
             CodeEditor(text: $controller.codeInput)
@@ -47,10 +48,10 @@ struct TrainerView: View {
     private var topicMap: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(controller.probeIndex != nil ? "Первое знакомство" : "Карта знаний")
+                Text(controller.probeIndex != nil ? L("Первое знакомство") : L("Карта знаний"))
                     .font(.system(size: 12, weight: .semibold))
                 if let index = controller.probeIndex {
-                    Text("задача \(min(index + 1, Trainer.probeTopics.count)) из \(Trainer.probeTopics.count)")
+                    Text(LF("задача %d из %d", min(index + 1, Trainer.probeTopics.count), Trainer.probeTopics.count))
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
@@ -98,8 +99,8 @@ struct TrainerView: View {
                 switch controller.phase {
                 case .idle:
                     Text(controller.probeIndex != nil
-                         ? "Пять коротких задач, чтобы понять, что ты уже знаешь. Пиши код прямо здесь, в поле ниже; когда готов — жми «Проверить»."
-                         : "Нажми «Дальше» — получишь задачу под свой уровень.")
+                         ? L("Пять коротких задач, чтобы понять, что ты уже знаешь. Пиши код прямо здесь, в поле ниже; когда готов — жми «Проверить».")
+                         : L("Нажми «Дальше» — получишь задачу под свой уровень."))
                         .font(.system(size: 13))
                         .foregroundStyle(.secondary)
                 case .failed(let message):
@@ -121,7 +122,7 @@ struct TrainerView: View {
                     } else if controller.phase == .responding {
                         HStack(spacing: 6) {
                             ProgressView().controlSize(.small)
-                            Text("наставник смотрит…")
+                            Text(L("наставник смотрит…"))
                                 .font(.system(size: 11)).foregroundStyle(.secondary)
                         }
                     }
@@ -163,24 +164,24 @@ struct TrainerView: View {
     private var buttons: some View {
         HStack(spacing: 10) {
             if controller.phase == .idle {
-                Button(controller.probeIndex != nil ? "Начать" : "Дальше") {
+                Button(controller.probeIndex != nil ? L("Начать") : L("Дальше")) {
                     controller.nextTask()
                 }
                 .keyboardShortcut(.defaultAction)
             } else {
-                Button("Проверить") { controller.review() }
+                Button(L("Проверить")) { controller.review() }
                     .disabled(controller.isBusy || controller.taskText.isEmpty
                               || controller.codeInput.trimmingCharacters(
                                   in: .whitespacesAndNewlines).isEmpty)
-                Button("Намёк") { controller.hint() }
+                Button(L("Намёк")) { controller.hint() }
                     .disabled(controller.isBusy || controller.taskText.isEmpty)
-                Button("Сдаюсь") { controller.giveUp() }
+                Button(L("Сдаюсь")) { controller.giveUp() }
                     .disabled(controller.isBusy || controller.taskText.isEmpty)
                 Spacer()
                 if controller.isBusy {
-                    Button("Стоп") { controller.cancel() }
+                    Button(L("Стоп")) { controller.cancel() }
                 } else {
-                    Button("Дальше →") { controller.nextTask() }
+                    Button(L("Дальше →")) { controller.nextTask() }
                         .disabled(controller.taskText.isEmpty)
                 }
             }

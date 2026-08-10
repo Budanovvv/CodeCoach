@@ -17,11 +17,11 @@ enum ScreenCapture {
         var errorDescription: String? {
             switch self {
             case .noPermission:
-                return "Нет доступа к записи экрана — включите CodeCoach в «Конфиденциальность и безопасность → Запись экрана»"
+                return L("Нет доступа к записи экрана — включите CodeCoach в «Конфиденциальность и безопасность → Запись экрана»")
             case .noDisplay:
-                return "Не удалось определить экран для снимка"
+                return L("Не удалось определить экран для снимка")
             case .encodingFailed:
-                return "Не удалось закодировать снимок экрана"
+                return L("Не удалось закодировать снимок экрана")
             }
         }
     }

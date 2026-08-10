@@ -9,9 +9,9 @@ enum Seniority: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .junior: return "Джун"
-        case .middle: return "Мидл"
-        case .senior: return "Синьор"
+        case .junior: return L("Джун")
+        case .middle: return L("Мидл")
+        case .senior: return L("Синьор")
         }
     }
 }
@@ -23,14 +23,15 @@ enum Prompts {
 
     /// Stable across every request in a session, so it sits at the front of the
     /// prefix and stays cacheable. Nothing volatile (no timestamps, no ids) may
-    /// be interpolated into it.
-    static let system = """
+    /// be interpolated into it — the answer-language rule is stable for as long
+    /// as the language setting is.
+    static var system: String { """
     Ты — тренажёр по алгоритмическим задачам. Пользователь готовится к техническим \
     собеседованиям и присылает скриншот экрана с условием задачи. Твоя работа — \
     довести его до решения самостоятельно, а не выдать готовый ответ.
 
     Общие правила:
-    - Отвечай по-русски. Названия структур данных, алгоритмов и код — на английском, \
+    - \(Localization.shared.answerRule) Названия структур данных, алгоритмов и код — на английском, \
     как принято в индустрии.
     - Ответ читают в маленьком окне под строкой меню. Пиши плотно: без вступлений, \
     без «отличный вопрос», без пересказа того, что уже сказано.
@@ -46,7 +47,7 @@ enum Prompts {
 
     Ты получаешь запрос одного из трёх уровней и обязан оставаться строго в его \
     рамках. Забежать вперёд — значит лишить человека тренировки.
-    """
+    """ }
 
     /// Per-level instruction. Goes after the image, so the system prompt and the
     /// screenshot stay a shared cacheable prefix across all three levels.

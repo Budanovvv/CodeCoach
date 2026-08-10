@@ -118,7 +118,7 @@ final class Settings {
             attributes: [.posixPermissions: 0o600])
         else {
             throw NSError(domain: "CodeCoach", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: "Не удалось сохранить ключ в \(Self.keyURL.path)"
+                NSLocalizedDescriptionKey: LF("Не удалось сохранить ключ в %@", Self.keyURL.path)
             ])
         }
         Log.d("settings: api key saved (\(trimmed.count) chars)")

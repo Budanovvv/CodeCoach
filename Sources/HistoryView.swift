@@ -4,6 +4,7 @@ import SwiftUI
 /// one-off lookup: the value is in coming back to a problem you needed level 3
 /// for and trying it again cold.
 struct HistoryView: View {
+    @ObservedObject private var loc = Localization.shared
     @State private var entries = History.shared.entries
     @State private var selection: History.Entry.ID?
     @State private var confirmingClear = false
@@ -16,9 +17,9 @@ struct HistoryView: View {
                 detail(for: entry)
             } else {
                 ContentUnavailableView(
-                    "Выберите задачу",
+                    L("Выберите задачу"),
                     systemImage: "clock.arrow.circlepath",
-                    description: Text("Слева — разобранные задачи, свежие сверху."))
+                    description: Text(L("Слева — разобранные задачи, свежие сверху.")))
             }
         }
         .frame(minWidth: 820, minHeight: 520)
@@ -27,7 +28,7 @@ struct HistoryView: View {
     private var list: some View {
         List(entries, selection: $selection) { entry in
             VStack(alignment: .leading, spacing: 3) {
-                Text(entry.summary.isEmpty ? "Без описания" : entry.summary)
+                Text(entry.summary.isEmpty ? L("Без описания") : entry.summary)
                     .font(.system(size: 12))
                     .lineLimit(2)
                 HStack(spacing: 6) {
@@ -44,28 +45,28 @@ struct HistoryView: View {
             }
             .padding(.vertical, 2)
             .contextMenu {
-                Button("Удалить", role: .destructive) { delete(entry) }
+                Button(L("Удалить"), role: .destructive) { delete(entry) }
             }
         }
         .frame(minWidth: 240)
         .toolbar {
             ToolbarItem {
-                Button("Очистить всё") { confirmingClear = true }
+                Button(L("Очистить всё")) { confirmingClear = true }
                     .disabled(entries.isEmpty)
             }
         }
         .confirmationDialog(
-            "Удалить всю историю разборов?",
+            L("Удалить всю историю разборов?"),
             isPresented: $confirmingClear, titleVisibility: .visible
         ) {
-            Button("Удалить", role: .destructive) {
+            Button(L("Удалить"), role: .destructive) {
                 History.shared.deleteAll()
                 entries = []
                 selection = nil
             }
-            Button("Отмена", role: .cancel) {}
+            Button(L("Отмена"), role: .cancel) {}
         } message: {
-            Text("Скриншоты и ответы будут удалены с диска безвозвратно.")
+            Text(L("Скриншоты и ответы будут удалены с диска безвозвратно."))
         }
     }
 

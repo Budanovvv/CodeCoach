@@ -2,6 +2,13 @@ import XCTest
 
 final class HintLevelTests: XCTestCase {
 
+    override func setUp() {
+        super.setUp()
+        // Assertions below are written against the Russian base strings; on an
+        // English-system CI they would otherwise test the translation tables.
+        Localization.shared.setLanguage(.ru)
+    }
+
     func testLadderIsOrderedAndTerminates() {
         XCTAssertEqual(HintLevel.nudge.next, .approach)
         XCTAssertEqual(HintLevel.approach.next, .solution)
@@ -179,6 +186,51 @@ final class AnswerFormatTests: XCTestCase {
     }
 }
 
+final class LocalizationTests: XCTestCase {
+
+    func testEveryTableEntryIsNonEmpty() {
+        for (key, value) in Localization.en {
+            XCTAssertFalse(value.trimmingCharacters(in: .whitespaces).isEmpty, "en: \(key)")
+        }
+        for (key, value) in Localization.uk {
+            XCTAssertFalse(value.trimmingCharacters(in: .whitespaces).isEmpty, "uk: \(key)")
+        }
+    }
+
+    func testFormatPlaceholdersSurviveTranslation() {
+        // A dropped %@ or %d in a translation would crash String(format:) or
+        // silently swallow the argument. Both tables must keep every
+        // placeholder of their key.
+        for table in [Localization.en, Localization.uk] {
+            for (key, value) in table {
+                for marker in ["%@", "%d"] {
+                    XCTAssertEqual(
+                        key.components(separatedBy: marker).count,
+                        value.components(separatedBy: marker).count,
+                        "placeholder \(marker) mismatch for: \(key)")
+                }
+            }
+        }
+    }
+
+    func testSystemPromptsFollowTheAnswerLanguage() {
+        // Both system prompts must carry the language rule — this is the whole
+        // "one setting drives the prompts too" contract. The rule text itself
+        // stays Russian scaffolding; what varies is which language it demands.
+        XCTAssertTrue(Prompts.system.contains(Localization.shared.answerRule))
+        XCTAssertTrue(TrainerPrompts.system.contains(Localization.shared.answerRule))
+    }
+
+    func testMachineMarkersStayRussianInEveryLanguage() {
+        // The verdict and title markers are parsed by code, so the prompts pin
+        // them to the exact Russian spelling regardless of answer language.
+        XCTAssertTrue(TrainerPrompts.review(taskText: "t", code: "c").contains("ИТОГ:"))
+        XCTAssertTrue(TrainerPrompts
+            .generateTask(topic: .strings, level: .started, avoidTitles: [])
+            .contains("НАЗВАНИЕ:"))
+    }
+}
+
 final class TrainerTests: XCTestCase {
 
     func testVerdictParsing() {
@@ -306,6 +358,13 @@ final class HistoryCodecTests: XCTestCase {
 }
 
 final class CLIErrorClassifierTests: XCTestCase {
+
+    override func setUp() {
+        super.setUp()
+        // Assertions below are written against the Russian base strings; on an
+        // English-system CI they would otherwise test the translation tables.
+        Localization.shared.setLanguage(.ru)
+    }
 
     private func message(
         _ stderr: String, exit: Int32 = 1, subtype: String? = nil,

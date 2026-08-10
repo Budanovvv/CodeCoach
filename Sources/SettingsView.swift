@@ -3,6 +3,8 @@ import SwiftUI
 /// Settings apply immediately — no Apply button, per Apple's HIG.
 struct SettingsView: View {
     @StateObject private var keyCapture = KeyCapture()
+    @ObservedObject private var loc = Localization.shared
+    @State private var uiLanguage = Localization.shared.language
     @State private var apiKeyField = ""
     @State private var apiKeySaved = Settings.shared.apiKey != nil
     @State private var apiKeyError: String?
@@ -23,16 +25,26 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("Доступ") {
+            Section(L("Язык")) {
+                Picker(L("Язык приложения и ответов"), selection: $uiLanguage) {
+                    ForEach(AppLanguage.allCases) { lang in
+                        Text(lang.label).tag(lang)
+                    }
+                }
+                .onChange(of: uiLanguage) { _, new in
+                    Localization.shared.setLanguage(new)
+                }
+            }
+
+            Section(L("Доступ")) {
                 permissionRow(
-                    title: "Универсальный доступ",
-                    detail: "нужен, чтобы слышать горячую клавишу",
+                    title: L("Универсальный доступ"),
+                    detail: L("нужен, чтобы слышать горячую клавишу"),
                     granted: accessibilityOK,
                     action: Permissions.openAccessibilitySettings)
                 permissionRow(
-                    title: "Запись экрана",
-                    detail: "нужен, чтобы снимать условие задачи; "
-                        + "после выдачи перезапустите CodeCoach",
+                    title: L("Запись экрана"),
+                    detail: L("нужен, чтобы снимать условие задачи; после выдачи перезапустите CodeCoach"),
                     granted: screenOK,
                     action: Permissions.promptOrRevealScreenRecording)
 
@@ -41,34 +53,34 @@ struct SettingsView: View {
                     // ON while AXIsProcessTrusted() still returns false, so the
                     // user can neither grant the permission nor understand why
                     // it is refused. Resetting our own record restores the prompt.
-                    Button("Разрешение уже выдано, но не работает — сбросить") {
+                    Button(L("Разрешение уже выдано, но не работает — сбросить")) {
                         Permissions.resetAccessibility()
                     }
                     .font(.system(size: 11))
                 }
             }
 
-            Section("Доступ к Claude") {
+            Section(L("Доступ к Claude")) {
                 HStack(alignment: .firstTextBaseline) {
                     Image(systemName: subscriptionOK ? "checkmark.circle.fill" : "circle")
                         .foregroundStyle(subscriptionOK ? Color.green : Color.secondary)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("Подписка Claude — через Claude Code").font(.system(size: 12))
+                        Text(L("Подписка Claude — через Claude Code")).font(.system(size: 12))
                         Text(subscriptionOK
-                             ? "Claude Code найден, подсказки идут от подписки — ключ API не нужен"
-                             : "установите Claude Code и войдите в него, либо введите ключ API ниже")
+                             ? L("Claude Code найден, подсказки идут от подписки — ключ API не нужен")
+                             : L("установите Claude Code и войдите в него, либо введите ключ API ниже"))
                             .font(.system(size: 10))
                             .foregroundStyle(.tertiary)
                     }
                     Spacer()
                 }
-                SecureField("sk-ant-… (не нужен, если есть Claude Code)", text: $apiKeyField)
+                SecureField(L("sk-ant-… (не нужен, если есть Claude Code)"), text: $apiKeyField)
                     .onSubmit(saveKey)
                 HStack {
-                    Button("Сохранить", action: saveKey)
+                    Button(L("Сохранить"), action: saveKey)
                         .disabled(apiKeyField.trimmingCharacters(in: .whitespaces).isEmpty)
                     if apiKeySaved {
-                        Label("Ключ сохранён", systemImage: "checkmark.circle")
+                        Label(L("Ключ сохранён"), systemImage: "checkmark.circle")
                             .font(.system(size: 11))
                             .foregroundStyle(.secondary)
                     }
@@ -78,47 +90,45 @@ struct SettingsView: View {
                         .font(.system(size: 11))
                         .foregroundStyle(.red)
                 }
-                Text("Ключ хранится в \(Settings.shared.apiKeyPath) с правами 0600. "
-                    + "Без ключа подсказки идут через Claude Code от вашей подписки; "
-                    + "ключ, если задан, имеет приоритет.")
+                Text(LF("Ключ хранится в %@ с правами 0600. Без ключа подсказки идут через Claude Code от вашей подписки; ключ, если задан, имеет приоритет.", Settings.shared.apiKeyPath))
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
             }
 
-            Section("Горячая клавиша") {
+            Section(L("Горячая клавиша")) {
                 HStack {
-                    Text(keyCapture.isCapturing ? "Нажмите клавишу…" : hotkeyName)
+                    Text(keyCapture.isCapturing ? L("Нажмите клавишу…") : hotkeyName)
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(keyCapture.isCapturing ? Brand.accent : .primary)
                     Spacer()
-                    Button(keyCapture.isCapturing ? "Отмена" : "Изменить") {
+                    Button(keyCapture.isCapturing ? L("Отмена") : L("Изменить")) {
                         if keyCapture.isCapturing { keyCapture.stop() } else { keyCapture.start() }
                     }
                 }
-                Text("Нажатие — новая задача. Ещё раз — следующий уровень подсказки. Esc — закрыть.")
+                Text(L("Нажатие — новая задача. Ещё раз — следующий уровень подсказки. Esc — закрыть."))
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
                 if KeyNames.typesCharacters(Settings.shared.hotkeyKeyCode) {
                     // A listen-only tap cannot swallow the keystroke, so a plain
                     // key both triggers us and types its character into whatever
                     // has focus.
-                    Text("⚠️ Эта клавиша печатает символ в активное окно. Лучше выбрать модификатор или F-клавишу.")
+                    Text(L("⚠️ Эта клавиша печатает символ в активное окно. Лучше выбрать модификатор или F-клавишу."))
                         .font(.system(size: 10))
                         .foregroundStyle(Brand.accentWarm)
                 }
             }
 
-            Section("Решение") {
-                Picker("Язык кода", selection: $language) {
+            Section(L("Решение")) {
+                Picker(L("Язык кода"), selection: $language) {
                     ForEach(languages, id: \.self) { lang in
-                        Text(lang.isEmpty ? "Определять по экрану" : lang).tag(lang)
+                        Text(lang.isEmpty ? L("Определять по экрану") : lang).tag(lang)
                     }
                 }
                 .onChange(of: language) { _, new in
                     Settings.shared.solutionLanguage = new.isEmpty ? nil : new
                 }
 
-                Picker("Уровень разбора", selection: $seniority) {
+                Picker(L("Уровень разбора"), selection: $seniority) {
                     ForEach(Seniority.allCases, id: \.self) { s in
                         Text(s.title).tag(s)
                     }
@@ -126,35 +136,31 @@ struct SettingsView: View {
                 .onChange(of: seniority) { _, new in
                     Settings.shared.seniority = new
                 }
-                Text("Каким по грейду должен быть код решения: джуну — просто и "
-                    + "читаемо, синьору — с инвариантами и трейд-оффами.")
+                Text(L("Каким по грейду должен быть код решения: джуну — просто и читаемо, синьору — с инвариантами и трейд-оффами."))
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
 
-                Toggle("Только код, без пояснений", isOn: $codeOnly)
+                Toggle(L("Только код, без пояснений"), isOn: $codeOnly)
                     .onChange(of: codeOnly) { _, new in
                         Settings.shared.codeOnly = new
                     }
-                Text("Решение приходит одним блоком кода — быстрее и сразу "
-                    + "вставляется. Комментарии внутри кода остаются.")
+                Text(L("Решение приходит одним блоком кода — быстрее и сразу вставляется. Комментарии внутри кода остаются."))
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
 
-                Toggle("Сразу показывать решение", isOn: $straightToSolution)
+                Toggle(L("Сразу показывать решение"), isOn: $straightToSolution)
                     .onChange(of: straightToSolution) { _, new in
                         Settings.shared.straightToSolution = new
                     }
-                Text("Режим для сравнения грейдов: каждое нажатие — новый снимок "
-                    + "и сразу уровень 3, без лестницы подсказок. Для тренировки "
-                    + "выключите.")
+                Text(L("Режим для сравнения грейдов: каждое нажатие — новый снимок и сразу уровень 3, без лестницы подсказок. Для тренировки выключите."))
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
 
-                Toggle("Хранить историю разборов", isOn: $historyEnabled)
+                Toggle(L("Хранить историю разборов"), isOn: $historyEnabled)
                     .onChange(of: historyEnabled) { _, new in
                         Settings.shared.historyEnabled = new
                     }
-                Text("Задачи и ответы лежат в \(History.shared.storageURL.path). В логи они не пишутся никогда.")
+                Text(LF("Задачи и ответы лежат в %@. В логи они не пишутся никогда.", History.shared.storageURL.path))
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
             }
@@ -190,7 +196,7 @@ struct SettingsView: View {
                 Text(detail).font(.system(size: 10)).foregroundStyle(.tertiary)
             }
             Spacer()
-            if !granted { Button("Открыть", action: action) }
+            if !granted { Button(L("Открыть"), action: action) }
         }
     }
 

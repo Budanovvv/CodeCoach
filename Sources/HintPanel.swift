@@ -141,7 +141,7 @@ final class HintPanel {
             // Stream ended without a single visible token: report it rather than
             // leaving a spinner running forever.
             if model.phase == .thinking {
-                showError("Пустой ответ — попробуйте снять экран ещё раз")
+                showError(L("Пустой ответ — попробуйте снять экран ещё раз"))
             }
             return
         }
@@ -443,6 +443,7 @@ private final class DragHandleView: NSView {
 
 private struct HintView: View {
     @ObservedObject var model: HintPanelModel
+    @ObservedObject private var loc = Localization.shared
     let onCopyCode: () -> Void
     let onCopyAll: () -> Void
     let onRetry: () -> Void
@@ -491,30 +492,30 @@ private struct HintView: View {
             }
             Spacer(minLength: 8)
             if isError {
-                Button("Повторить", action: onRetry)
+                Button(L("Повторить"), action: onRetry)
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                     .fixedSize()
             }
             if model.phase == .done {
                 levelChevrons
-                headerButton("camera.on.rectangle", help: "Переснять экран этим же уровнем",
+                headerButton("camera.on.rectangle", help: L("Переснять экран этим же уровнем"),
                              action: onRecapture)
-                headerButton("clock.arrow.circlepath", help: "Открыть историю разборов",
+                headerButton("clock.arrow.circlepath", help: L("Открыть историю разборов"),
                              action: onOpenHistory)
             }
             if showsAnswer {
                 if answerHasCode {
-                    copyButton("curlybraces", help: "Скопировать только код",
+                    copyButton("curlybraces", help: L("Скопировать только код"),
                                flashKey: "code", action: onCopyCode)
                 }
-                copyButton("doc.on.doc", help: "Скопировать весь ответ",
+                copyButton("doc.on.doc", help: L("Скопировать весь ответ"),
                            flashKey: "all", action: onCopyAll)
             }
             levelBadge
             // Mouse-reachable close. Esc still works, but a visible button
             // needs no explaining.
-            headerButton("xmark", help: "Закрыть (Esc)", action: onClose)
+            headerButton("xmark", help: L("Закрыть (Esc)"), action: onClose)
         }
         .padding(.horizontal, 14)
         .frame(height: 52)
@@ -527,7 +528,7 @@ private struct HintView: View {
         if model.phase == .capturing || model.phase == .thinking, let started = model.waitStarted {
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 let seconds = max(0, Int(context.date.timeIntervalSince(started)))
-                Text(seconds > 2 ? "\(subtitle) · \(seconds) c" : subtitle)
+                Text(seconds > 2 ? "\(subtitle) · \(seconds) \(L("с"))" : subtitle)
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
@@ -548,8 +549,8 @@ private struct HintView: View {
     private var levelChevrons: some View {
         if model.cachedNeighbor(-1) != nil || model.cachedNeighbor(+1) != nil {
             HStack(spacing: 2) {
-                chevron("chevron.left", delta: -1, help: "Предыдущий уровень")
-                chevron("chevron.right", delta: +1, help: "Следующий из уже полученных")
+                chevron("chevron.left", delta: -1, help: L("Предыдущий уровень"))
+                chevron("chevron.right", delta: +1, help: L("Следующий из уже полученных"))
             }
         }
     }
@@ -648,8 +649,8 @@ private struct HintView: View {
 
     private var title: String {
         switch model.phase {
-        case .capturing: return "Снимаю экран…"
-        case .thinking: return "Читаю задачу…"
+        case .capturing: return L("Снимаю экран…")
+        case .thinking: return L("Читаю задачу…")
         case .answering, .done: return model.level.title
         case .failed(let message): return message
         }
@@ -662,16 +663,16 @@ private struct HintView: View {
         case .capturing:
             return ""
         case .thinking:
-            return model.thinkingLine.isEmpty ? "модель думает" : model.thinkingLine
+            return model.thinkingLine.isEmpty ? L("модель думает") : model.thinkingLine
         case .answering:
-            return "Esc — закрыть"
+            return L("Esc — закрыть")
         case .done:
             if model.cachedNeighbor(-1) != nil || model.cachedNeighbor(+1) != nil {
-                return "‹ › — уровни · хоткей — дальше · Esc — закрыть"
+                return L("‹ › — уровни · хоткей — дальше · Esc — закрыть")
             }
             return model.atLastLevel
-                ? "Хоткей — новая задача · Esc — закрыть"
-                : "Ещё раз хоткей — следующий уровень · Esc — закрыть"
+                ? L("Хоткей — новая задача · Esc — закрыть")
+                : L("Ещё раз хоткей — следующий уровень · Esc — закрыть")
         case .failed:
             return ""
         }

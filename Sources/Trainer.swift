@@ -20,14 +20,14 @@ enum Trainer {
 
         var title: String {
             switch self {
-            case .typesAndVariables: return "Переменные и типы"
-            case .strings: return "Строки"
-            case .listsAndTuples: return "Списки и кортежи"
-            case .dictsAndSets: return "Словари и множества"
-            case .conditionsAndLoops: return "Условия и циклы"
-            case .functions: return "Функции"
-            case .errors: return "Ошибки и исключения"
-            case .oop: return "Классы и ООП"
+            case .typesAndVariables: return L("Переменные и типы")
+            case .strings: return L("Строки")
+            case .listsAndTuples: return L("Списки и кортежи")
+            case .dictsAndSets: return L("Словари и множества")
+            case .conditionsAndLoops: return L("Условия и циклы")
+            case .functions: return L("Функции")
+            case .errors: return L("Ошибки и исключения")
+            case .oop: return L("Классы и ООП")
             }
         }
     }
@@ -41,10 +41,10 @@ enum Trainer {
 
         var title: String {
             switch self {
-            case .notStarted: return "не начинал"
-            case .started: return "начал"
-            case .confident: return "уверенно"
-            case .mastered: return "освоил"
+            case .notStarted: return L("не начинал")
+            case .started: return L("начал")
+            case .confident: return L("уверенно")
+            case .mastered: return L("освоил")
             }
         }
     }

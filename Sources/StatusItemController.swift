@@ -18,6 +18,11 @@ final class StatusItemController {
             systemSymbolName: "graduationcap", accessibilityDescription: "CodeCoach")
         item.button?.image?.isTemplate = true
         rebuildMenu()
+        // AppKit menus don't observe SwiftUI state; rebuild on language change.
+        NotificationCenter.default.addObserver(
+            forName: Localization.changed, object: nil, queue: .main) { [weak self] _ in
+            self?.rebuildMenu()
+        }
     }
 
     func setBusy(_ busy: Bool) {
@@ -37,7 +42,7 @@ final class StatusItemController {
 
         let hotkey = Settings.shared.hotkeyName
         let capture = NSMenuItem(
-            title: "Разобрать задачу (\(hotkey))",
+            title: L("Разобрать задачу") + " (\(hotkey))",
             action: #selector(capture), keyEquivalent: "")
         capture.target = self
         menu.addItem(capture)
@@ -49,14 +54,14 @@ final class StatusItemController {
             menu.addItem(.separator())
             if Permissions.accessibility != .granted {
                 let warn = NSMenuItem(
-                    title: "⚠️ Нет доступа к Универсальному доступу",
+                    title: L("⚠️ Нет доступа к Универсальному доступу"),
                     action: #selector(openAccessibility), keyEquivalent: "")
                 warn.target = self
                 menu.addItem(warn)
             }
             if Permissions.screenRecording != .granted {
                 let warn = NSMenuItem(
-                    title: "⚠️ Нет доступа к записи экрана",
+                    title: L("⚠️ Нет доступа к записи экрана"),
                     action: #selector(openScreenRecording), keyEquivalent: "")
                 warn.target = self
                 menu.addItem(warn)
@@ -66,33 +71,33 @@ final class StatusItemController {
         menu.addItem(.separator())
 
         let trainer = NSMenuItem(
-            title: "Тренировка Python…", action: #selector(showTrainer), keyEquivalent: "t")
+            title: L("Тренировка Python…"), action: #selector(showTrainer), keyEquivalent: "t")
         trainer.target = self
         menu.addItem(trainer)
 
         let history = NSMenuItem(
-            title: "История разборов…", action: #selector(showHistory), keyEquivalent: "")
+            title: L("История разборов…"), action: #selector(showHistory), keyEquivalent: "")
         history.target = self
         menu.addItem(history)
 
         let settings = NSMenuItem(
-            title: "Настройки…", action: #selector(showSettings), keyEquivalent: ",")
+            title: L("Настройки…"), action: #selector(showSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
 
         let updates = NSMenuItem(
-            title: "Проверить обновления…", action: #selector(checkForUpdates), keyEquivalent: "")
+            title: L("Проверить обновления…"), action: #selector(checkForUpdates), keyEquivalent: "")
         updates.target = self
         menu.addItem(updates)
 
         let about = NSMenuItem(
-            title: "О CodeCoach", action: #selector(showAbout), keyEquivalent: "")
+            title: L("О CodeCoach"), action: #selector(showAbout), keyEquivalent: "")
         about.target = self
         menu.addItem(about)
 
         menu.addItem(.separator())
         let quit = NSMenuItem(
-            title: "Выйти из CodeCoach", action: #selector(NSApplication.terminate(_:)),
+            title: L("Выйти из CodeCoach"), action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q")
         menu.addItem(quit)
 
@@ -108,7 +113,7 @@ final class StatusItemController {
     @objc private func showAbout() {
         NSApp.activate(ignoringOtherApps: true)
         let credits = NSMutableAttributedString(
-            string: "Тренажёр по задачам для технических собеседований\n",
+            string: L("Тренажёр по задачам для технических собеседований") + "\n",
             attributes: [.font: NSFont.systemFont(ofSize: 11)])
         credits.append(NSAttributedString(
             string: "Free & open source · GPL-3.0\n",
