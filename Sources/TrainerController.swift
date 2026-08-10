@@ -45,8 +45,8 @@ final class TrainerController: ObservableObject {
 
     var currentTaskTitle: String {
         taskText.split(separator: "\n").first.map {
-            $0.replacingOccurrences(of: "НАЗВАНИЕ:", with: "").trimmingCharacters(in: .whitespaces)
-        } ?? "Задача"
+            $0.replacingOccurrences(of: "TITLE:", with: "").trimmingCharacters(in: .whitespaces)
+        } ?? L("Task")
     }
 
     // MARK: - Session flow
@@ -146,7 +146,7 @@ final class TrainerController: ObservableObject {
         }
         profile.solved.append(Trainer.SolvedTask(
             topic: topic, title: currentTaskTitle, date: Date(),
-            verdict: gaveUp ? "сдался" : verdict.rawValue))
+            verdict: gaveUp ? "gave up" : verdict.rawValue))
         persist()
     }
 

@@ -35,15 +35,15 @@ enum CLIErrorClassifier {
         let haystack = (stderr + " " + (subtype ?? "")).lowercased()
 
         if contains(haystack, Self.limitMarkers) || hasStatus(haystack, 429) {
-            let base = L("Лимит подписки Claude исчерпан — попробуйте позже")
+            let base = L("Claude subscription limit reached — try later")
             guard let reset = resetTime(in: stderr, timeZone: timeZone) else { return base }
-            return base + LF(" (сброс в %@)", reset)
+            return base + LF(" (resets at %@)", reset)
         }
         if contains(haystack, Self.authMarkers) || hasStatus(haystack, 401) {
-            return L("Вы не вошли в Claude Code — выполните claude login в терминале")
+            return L("You are not logged into Claude Code — run claude login in a terminal")
         }
         if contains(haystack, Self.networkMarkers) {
-            return L("Нет связи с Claude — проверьте интернет")
+            return L("Cannot reach Claude — check your connection")
         }
 
         // Nothing recognized: show what actually happened. Guessing here is the
@@ -51,9 +51,9 @@ enum CLIErrorClassifier {
         let snippet = singleLine(stderr, limit: snippetLimit)
         if !snippet.isEmpty { return "Claude Code: \(snippet)" }
         if let subtype, subtype != "success", !subtype.isEmpty {
-            return LF("Claude Code завершился без ответа (%@)", subtype)
+            return LF("Claude Code finished without an answer (%@)", subtype)
         }
-        return LF("Claude Code завершился с ошибкой (код %d)", exitCode)
+        return LF("Claude Code failed (code %d)", exitCode)
     }
 
     /// stderr excerpt for `Log.d`. Safe under the project's privacy rule: the

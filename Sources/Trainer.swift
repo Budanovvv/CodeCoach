@@ -20,14 +20,14 @@ enum Trainer {
 
         var title: String {
             switch self {
-            case .typesAndVariables: return L("Переменные и типы")
-            case .strings: return L("Строки")
-            case .listsAndTuples: return L("Списки и кортежи")
-            case .dictsAndSets: return L("Словари и множества")
-            case .conditionsAndLoops: return L("Условия и циклы")
-            case .functions: return L("Функции")
-            case .errors: return L("Ошибки и исключения")
-            case .oop: return L("Классы и ООП")
+            case .typesAndVariables: return L("Variables and types")
+            case .strings: return L("Strings")
+            case .listsAndTuples: return L("Lists and tuples")
+            case .dictsAndSets: return L("Dicts and sets")
+            case .conditionsAndLoops: return L("Conditions and loops")
+            case .functions: return L("Functions")
+            case .errors: return L("Errors and exceptions")
+            case .oop: return L("Classes and OOP")
             }
         }
     }
@@ -41,20 +41,19 @@ enum Trainer {
 
         var title: String {
             switch self {
-            case .notStarted: return L("не начинал")
-            case .started: return L("начал")
-            case .confident: return L("уверенно")
-            case .mastered: return L("освоил")
+            case .notStarted: return L("not started")
+            case .started: return L("started")
+            case .confident: return L("confident")
+            case .mastered: return L("mastered")
             }
         }
     }
 
     /// What the review concluded about one attempt. Parsed from the model's
-    /// final "ИТОГ:" line — see TrainerPrompts.
+    /// final "VERDICT:" line — see TrainerPrompts.
     enum Verdict: String {
-        case solved = "решено"
-        case partial = "частично"
-        case failed = "не решено"
+        case solved, partial
+        case failed = "not solved"
     }
 
     struct SolvedTask: Codable {
@@ -121,18 +120,20 @@ enum Trainer {
     }
 
     /// Pulls the verdict out of a review answer. The prompt asks for a final
-    /// "ИТОГ: решено|частично|не решено" line; scanning from the end tolerates
-    /// the model mentioning the word earlier in the explanation.
+    /// "VERDICT: solved|partial|not solved" line pinned to English in any
+    /// answer language; scanning from the end tolerates the model mentioning
+    /// the word earlier in the explanation.
     static func parseVerdict(from answer: String) -> Verdict? {
         for line in answer.split(separator: "\n").reversed() {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard let range = trimmed.range(of: "ИТОГ:") else { continue }
+            guard let range = trimmed.range(of: "VERDICT:", options: .caseInsensitive)
+            else { continue }
             let value = trimmed[range.upperBound...]
                 .trimmingCharacters(in: .whitespaces)
                 .lowercased()
-            if value.hasPrefix("решено") { return .solved }
-            if value.hasPrefix("частично") { return .partial }
-            if value.hasPrefix("не решено") || value.hasPrefix("не_решено") { return .failed }
+            if value.hasPrefix("solved") { return .solved }
+            if value.hasPrefix("partial") { return .partial }
+            if value.hasPrefix("not solved") || value.hasPrefix("not_solved") { return .failed }
         }
         return nil
     }

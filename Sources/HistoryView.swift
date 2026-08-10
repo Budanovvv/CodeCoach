@@ -17,9 +17,9 @@ struct HistoryView: View {
                 detail(for: entry)
             } else {
                 ContentUnavailableView(
-                    L("Выберите задачу"),
+                    L("Select a problem"),
                     systemImage: "clock.arrow.circlepath",
-                    description: Text(L("Слева — разобранные задачи, свежие сверху.")))
+                    description: Text(L("Solved problems on the left, newest first.")))
             }
         }
         .frame(minWidth: 820, minHeight: 520)
@@ -28,7 +28,7 @@ struct HistoryView: View {
     private var list: some View {
         List(entries, selection: $selection) { entry in
             VStack(alignment: .leading, spacing: 3) {
-                Text(entry.summary.isEmpty ? L("Без описания") : entry.summary)
+                Text(entry.summary.isEmpty ? L("No description") : entry.summary)
                     .font(.system(size: 12))
                     .lineLimit(2)
                 HStack(spacing: 6) {
@@ -45,28 +45,28 @@ struct HistoryView: View {
             }
             .padding(.vertical, 2)
             .contextMenu {
-                Button(L("Удалить"), role: .destructive) { delete(entry) }
+                Button(L("Delete"), role: .destructive) { delete(entry) }
             }
         }
         .frame(minWidth: 240)
         .toolbar {
             ToolbarItem {
-                Button(L("Очистить всё")) { confirmingClear = true }
+                Button(L("Clear all")) { confirmingClear = true }
                     .disabled(entries.isEmpty)
             }
         }
         .confirmationDialog(
-            L("Удалить всю историю разборов?"),
+            L("Delete the entire history?"),
             isPresented: $confirmingClear, titleVisibility: .visible
         ) {
-            Button(L("Удалить"), role: .destructive) {
+            Button(L("Delete"), role: .destructive) {
                 History.shared.deleteAll()
                 entries = []
                 selection = nil
             }
-            Button(L("Отмена"), role: .cancel) {}
+            Button(L("Cancel"), role: .cancel) {}
         } message: {
-            Text(L("Скриншоты и ответы будут удалены с диска безвозвратно."))
+            Text(L("Screenshots and answers will be permanently removed from disk."))
         }
     }
 

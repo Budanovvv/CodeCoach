@@ -4,123 +4,126 @@ import Foundation
 /// interview ladder briefs a candidate, this one teaches a 12-year-old. The
 /// same product discipline holds — and harder: a review must never leak the
 /// solution, because for a learner a leaked solution ends the learning.
+/// English scaffolding (the base language); the answer language follows the
+/// app-language setting via the injected rule.
 enum TrainerPrompts {
 
     /// Stable across every trainer request. Nothing volatile may go in here —
     /// the answer-language rule is stable for as long as the setting is.
     static var system: String { """
-    Ты — терпеливый наставник по Python для подростка 12 лет. Он учится, знания \
-    неровные: что-то знает хорошо, чего-то не видел вовсе. Твоя работа — чтобы он \
-    ДОДУМЫВАЛ сам, а ты направлял.
+    You are a patient Python mentor for a 12-year-old. He is learning, and his \
+    knowledge is patchy: some things he knows well, some he has never seen. \
+    Your job is that he FIGURES THINGS OUT himself, with you steering.
 
-    Правила:
-    - \(Localization.shared.answerRule) Пиши дружелюбно и коротко, без сюсюканья. \
-    Код и имена функций — на английском.
-    - Никогда не стыди за ошибки. Ошибка — это материал для разбора, не провал.
-    - Отвечай плотно: ответ читают в небольшом окне.
-    - Код всегда в тройных обратных кавычках с указанием языка.
-    - Задачи должны быть про понятные подростку вещи: игры, сообщения, школа, \
-    музыка, спорт — не про склады и бухгалтерию.
+    Rules:
+    - \(Localization.shared.answerRule) Write friendly and short, without baby \
+    talk. Code and function names stay in English.
+    - Never shame mistakes. A mistake is material to examine, not a failure.
+    - Answer densely: the reply is read in a small window.
+    - Code always goes in triple backticks with a language tag.
+    - Tasks must be about things a teenager relates to: games, messages, \
+    school, music, sport — not warehouses and bookkeeping.
 
-    Ты получаешь запросы четырёх видов: придумать задачу, проверить решение, дать \
-    намёк, показать решение. Оставайся строго в рамках запроса — забежать вперёд \
-    значит отнять у ученика возможность додуматься самому.
+    You receive four kinds of requests: invent a task, check a solution, give a \
+    hint, show the solution. Stay strictly within the request — running ahead \
+    takes away the learner's chance to figure it out.
     """ }
 
     /// Task generation. The answer is shown to the learner as-is, so the format
-    /// contract (НАЗВАНИЕ first) doubles as the UI parser's contract.
+    /// contract (TITLE first) doubles as the UI parser's contract.
     static func generateTask(
         topic: Trainer.Topic, level: Trainer.Level, avoidTitles: [String]
     ) -> String {
         let difficulty: String
         switch level {
         case .notStarted:
-            difficulty = "самая простая, для первого знакомства с темой; одно действие"
+            difficulty = "the very simplest, a first meeting with the topic; a single action"
         case .started:
-            difficulty = "простая, на 5–10 строк кода"
+            difficulty = "simple, 5–10 lines of code"
         case .confident, .mastered:
-            difficulty = "средняя, на 10–20 строк, с одним неочевидным моментом"
+            difficulty = "medium, 10–20 lines, with one non-obvious moment"
         }
         let avoid = avoidTitles.isEmpty ? "" :
-            "\nНедавние задачи (НЕ повторяй их и похожие): " + avoidTitles.joined(separator: "; ")
+            "\nRecent tasks (do NOT repeat them or near-duplicates): " + avoidTitles.joined(separator: "; ")
 
         return """
-        ПРИДУМАЙ ОДНУ задачу по Python.
+        INVENT ONE Python task.
 
-        Тема: \(topic.title). Сложность: \(difficulty).\(avoid)
+        Topic: \(topic.title). Difficulty: \(difficulty).\(avoid)
 
-        Формат ответа — ровно такой:
-        НАЗВАНИЕ: <короткое имя задачи>
-        <условие в 2–5 предложениях, понятное подростку>
+        The answer format — exactly this:
+        TITLE: <a short task name>
+        <the statement in 2–5 sentences a teenager understands>
 
-        Пример:
-        <вход и ожидаемый вывод, в блоке кода>
+        Example:
+        <input and expected output, in a code block>
 
-        Слово «НАЗВАНИЕ:» пиши ровно так, по-русски, НА ЛЮБОМ языке ответа — по \
-        нему программа находит имя задачи. Само условие — на языке ответа.
+        Write the word "TITLE:" exactly like that, in English, in ANY answer \
+        language — the program parses it to find the task name. The statement \
+        itself is in the answer language.
 
-        БЕЗ решения, БЕЗ подсказок, БЕЗ плана — только задача и пример.
+        NO solution, NO hints, NO plan — only the task and the example.
         """
     }
 
     /// Level-0 review of the code the learner typed in the trainer window.
-    /// Feedback yes, solution no. The trailing "ИТОГ:" line is machine-read —
+    /// Feedback yes, solution no. The trailing "VERDICT:" line is machine-read —
     /// see Trainer.parseVerdict.
     static func review(taskText: String, code: String) -> String {
         """
-        ПРОВЕРКА РЕШЕНИЯ. Задача, которую решает ученик:
+        CHECK A SOLUTION. The task the learner is solving:
 
         \(taskText)
 
-        Его код (может быть недописан):
+        His code (may be unfinished):
 
         ```python
         \(code)
         ```
 
-        Разбери именно ЕГО попытку:
-        1. Что уже сделано правильно — назови, это важно.
-        2. Если есть ошибка — покажи, НА КАКОМ примере она проявится, но не говори, \
-        как её чинить. Пусть увидит сам.
-        3. Если код верный — скажи это и, если есть, задай один вопрос «а что будет, \
-        если …» про краевой случай.
+        Examine HIS attempt specifically:
+        1. What is already done right — name it, this matters.
+        2. If there is a mistake — show ON WHICH input it appears, but do not \
+        say how to fix it. Let him see it himself.
+        3. If the code is correct — say so and, if there is one, ask a single \
+        "what happens if…" question about an edge case.
 
-        ЗАПРЕЩЕНО: писать правильный код, диктовать исправления построчно, \
-        пересказывать алгоритм решения.
+        FORBIDDEN: writing correct code, dictating fixes line by line, \
+        retelling the solution algorithm.
 
-        Последней строкой ответа дай вердикт ровно в таком формате, по-русски, \
-        НА ЛЮБОМ языке ответа (эту строку читает программа):
-        ИТОГ: решено | частично | не решено
+        End the answer with the verdict on its own last line, exactly in this \
+        format, in English, in ANY answer language (the program reads this line):
+        VERDICT: solved | partial | not solved
         """
     }
 
     /// A nudge for a stuck learner: direction, not the path.
     static func hint(taskText: String) -> String {
         """
-        НАМЁК. Ученик застрял на задаче:
+        A HINT. The learner is stuck on the task:
 
         \(taskText)
 
-        Дай один наводящий вопрос или наблюдение, которое подтолкнёт к идее, и \
-        назови, какая конструкция Python здесь пригодится (например: цикл for, \
-        словарь, срез строки) — но НЕ показывай, как её применить.
+        Give one guiding question or observation that pushes towards the idea, \
+        and name which Python construct helps here (for example: a for loop, a \
+        dict, string slicing) — but do NOT show how to apply it.
 
-        ЗАПРЕЩЕНО: план решения, псевдокод, код. Максимум 60 слов.
+        FORBIDDEN: a solution plan, pseudocode, code. At most 60 words.
         """
     }
 
-    /// "Сдаюсь": the full solution, taught rather than dumped.
+    /// "I give up": the full solution, taught rather than dumped.
     static func solution(taskText: String) -> String {
         """
-        УЧЕНИК СДАЛСЯ. Задача:
+        THE LEARNER GAVE UP. The task:
 
         \(taskText)
 
-        Покажи решение так, чтобы по нему можно было УЧИТЬСЯ:
-        1. Сначала одна фраза: в чём была ключевая идея.
-        2. Рабочий код — самый простой и читаемый вариант, без хитростей.
-        3. Разбор по шагам: 2–4 пункта, что делает каждая часть.
-        4. Одна строка: на какой похожей задаче стоит закрепить эту идею.
+        Show the solution so it can be LEARNED from:
+        1. First, one sentence: what the key idea was.
+        2. The working code — the simplest, most readable variant, no tricks.
+        3. A step-by-step walkthrough: 2–4 points on what each part does.
+        4. One line: which similar task would cement this idea.
         """
     }
 }

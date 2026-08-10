@@ -2,11 +2,9 @@ import Foundation
 import SwiftUI
 
 /// One setting drives both the UI language and the language the model answers
-/// in. The pattern mirrors Dictate's Localization.swift with one deliberate
-/// difference: there the base strings are English; here they are Russian,
-/// because the app was written Russian-first — the keys ARE the Russian
-/// strings, and the tables translate them. A missing table entry therefore
-/// degrades to Russian instead of to a bare key.
+/// in. Same pattern as Dictate's Localization.swift, including the base
+/// language: the keys ARE the English strings (owner's call — English is the
+/// base), and the tables translate them. A missing entry degrades to English.
 enum AppLanguage: String, CaseIterable, Identifiable {
     case system, ru, en, uk
     var id: String { rawValue }
@@ -17,8 +15,8 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         case .system:
             switch Localization.systemLanguage {
             case .uk: return "Як у системі"
-            case .en: return "Follow system"
-            default: return "Как в системе"
+            case .ru: return "Как в системе"
+            default: return "Follow system"
             }
         case .ru: return "Русский"
         case .en: return "English"
@@ -60,290 +58,526 @@ final class Localization: ObservableObject {
 
     var resolved: AppLanguage { language == .system ? Self.systemLanguage : language }
 
-    func translate(_ ru: String) -> String {
+    func translate(_ en: String) -> String {
         switch resolved {
-        case .en: return Self.en[ru] ?? ru
-        case .uk: return Self.uk[ru] ?? ru
-        default: return ru
+        case .ru: return Self.ru[en] ?? en
+        case .uk: return Self.uk[en] ?? en
+        default: return en
         }
     }
 
     /// The line injected into every system prompt: which language the model
-    /// answers in. This is the whole "prompts follow the same setting" story —
-    /// the prompt scaffolding stays Russian (the model reads it fine), only
-    /// the answer language switches.
+    /// answers in. The prompts themselves are English scaffolding; only this
+    /// rule switches with the setting.
     var answerRule: String {
         switch resolved {
-        case .en: return "Отвечай по-английски (in English)."
-        case .uk: return "Отвечай на украинском языке (українською)."
-        default: return "Отвечай по-русски."
+        case .ru: return "Answer in Russian (по-русски)."
+        case .uk: return "Answer in Ukrainian (українською)."
+        default: return "Answer in English."
         }
     }
 
-    // MARK: - Tables (Russian key → translation)
+    // MARK: - Tables (English key → translation)
 
-    static let en: [String: String] = [
-        // Status menu + About
-        "Разобрать задачу": "Solve the problem",
-        "⚠️ Нет доступа к Универсальному доступу": "⚠️ Accessibility permission missing",
-        "⚠️ Нет доступа к записи экрана": "⚠️ Screen Recording permission missing",
-        "Тренировка Python…": "Python Training…",
-        "История разборов…": "History…",
-        "Настройки…": "Settings…",
-        "Проверить обновления…": "Check for Updates…",
-        "О CodeCoach": "About CodeCoach",
-        "Выйти из CodeCoach": "Quit CodeCoach",
-        "Тренажёр по задачам для технических собеседований": "A trainer for technical-interview problems",
-        // Window titles
-        "Настройки CodeCoach": "CodeCoach Settings",
-        "История разборов": "History",
-        "Тренировка Python": "Python Training",
-        // Settings
-        "Язык": "Language",
-        "Язык приложения и ответов": "App and answer language",
-        "Доступ": "Permissions",
-        "Универсальный доступ": "Accessibility",
-        "нужен, чтобы слышать горячую клавишу": "needed to hear the hotkey",
-        "Запись экрана": "Screen Recording",
-        "нужен, чтобы снимать условие задачи; после выдачи перезапустите CodeCoach":
-            "needed to capture the problem; restart CodeCoach after granting",
-        "Разрешение уже выдано, но не работает — сбросить":
-            "Permission granted but not working — reset",
-        "Открыть": "Open",
-        "Доступ к Claude": "Claude access",
-        "Подписка Claude — через Claude Code": "Claude subscription — via Claude Code",
-        "Claude Code найден, подсказки идут от подписки — ключ API не нужен":
-            "Claude Code found; hints run on your subscription — no API key needed",
-        "установите Claude Code и войдите в него, либо введите ключ API ниже":
-            "install and log into Claude Code, or paste an API key below",
-        "sk-ant-… (не нужен, если есть Claude Code)": "sk-ant-… (not needed with Claude Code)",
-        "Сохранить": "Save",
-        "Ключ сохранён": "Key saved",
-        "Ключ хранится в %@ с правами 0600. Без ключа подсказки идут через Claude Code от вашей подписки; ключ, если задан, имеет приоритет.":
-            "The key is stored at %@ with 0600 permissions. Without a key, hints run through Claude Code on your subscription; a key, when set, takes priority.",
-        "Горячая клавиша": "Hotkey",
-        "Нажмите клавишу…": "Press a key…",
-        "Отмена": "Cancel",
-        "Изменить": "Change",
-        "Нажатие — новая задача. Ещё раз — следующий уровень подсказки. Esc — закрыть.":
-            "Press — new problem. Press again — next hint level. Esc — close.",
-        "⚠️ Эта клавиша печатает символ в активное окно. Лучше выбрать модификатор или F-клавишу.":
-            "⚠️ This key types a character into the active window. Prefer a modifier or an F-key.",
-        "Решение": "Solution",
-        "Язык кода": "Code language",
-        "Определять по экрану": "Detect from screen",
-        "Уровень разбора": "Solution register",
-        "Джун": "Junior", "Мидл": "Middle", "Синьор": "Senior",
-        "Каким по грейду должен быть код решения: джуну — просто и читаемо, синьору — с инвариантами и трейд-оффами.":
-            "What grade the solution code targets: junior — simple and readable, senior — invariants and trade-offs.",
-        "Только код, без пояснений": "Code only, no explanations",
-        "Решение приходит одним блоком кода — быстрее и сразу вставляется. Комментарии внутри кода остаются.":
-            "The solution arrives as one code block — faster and paste-ready. In-code comments stay.",
-        "Сразу показывать решение": "Show the solution right away",
-        "Режим для сравнения грейдов: каждое нажатие — новый снимок и сразу уровень 3, без лестницы подсказок. Для тренировки выключите.":
-            "A register-comparison mode: every press is a fresh capture straight to level 3, no hint ladder. Turn off for actual practice.",
-        "Хранить историю разборов": "Keep history",
-        "Задачи и ответы лежат в %@. В логи они не пишутся никогда.":
-            "Problems and answers live in %@. They are never written to logs.",
-        // Hint levels + panel
-        "Намёк": "Nudge", "Подход": "Approach",
-        "Снимаю экран…": "Capturing the screen…",
-        "Читаю задачу…": "Reading the problem…",
-        "модель думает": "the model is thinking",
-        "с": "s",
-        "Esc — закрыть": "Esc — close",
-        "‹ › — уровни · хоткей — дальше · Esc — закрыть": "‹ › — levels · hotkey — next · Esc — close",
-        "Хоткей — новая задача · Esc — закрыть": "Hotkey — new problem · Esc — close",
-        "Ещё раз хоткей — следующий уровень · Esc — закрыть": "Hotkey again — next level · Esc — close",
-        "Пустой ответ — попробуйте снять экран ещё раз": "Empty answer — try capturing again",
-        "Повторить": "Retry",
-        "Переснять экран этим же уровнем": "Recapture at the same level",
-        "Открыть историю разборов": "Open history",
-        "Скопировать только код": "Copy code only",
-        "Скопировать весь ответ": "Copy the whole answer",
-        "Предыдущий уровень": "Previous level",
-        "Следующий из уже полученных": "Next of the already fetched",
-        "Закрыть (Esc)": "Close (Esc)",
-        // History window
-        "Выберите задачу": "Select a problem",
-        "Слева — разобранные задачи, свежие сверху.": "Solved problems on the left, newest first.",
-        "Без описания": "No description",
-        "Удалить": "Delete",
-        "Очистить всё": "Clear all",
-        "Удалить всю историю разборов?": "Delete the entire history?",
-        "Скриншоты и ответы будут удалены с диска безвозвратно.":
-            "Screenshots and answers will be permanently removed from disk.",
-        // Trainer
-        "Первое знакомство": "Getting to know you",
-        "Карта знаний": "Knowledge map",
-        "задача %d из %d": "task %d of %d",
-        "Переменные и типы": "Variables and types", "Строки": "Strings",
-        "Списки и кортежи": "Lists and tuples", "Словари и множества": "Dicts and sets",
-        "Условия и циклы": "Conditions and loops", "Функции": "Functions",
-        "Ошибки и исключения": "Errors and exceptions", "Классы и ООП": "Classes and OOP",
-        "не начинал": "not started", "начал": "started", "уверенно": "confident", "освоил": "mastered",
-        "Пять коротких задач, чтобы понять, что ты уже знаешь. Пиши код прямо здесь, в поле ниже; когда готов — жми «Проверить».":
-            "Five short tasks to see what you already know. Write code right here in the field below; when ready, hit “Check”.",
-        "Нажми «Дальше» — получишь задачу под свой уровень.": "Hit “Next” to get a task at your level.",
-        "наставник смотрит…": "the mentor is looking…",
-        "Твой код": "Your code",
-        "Начать": "Start", "Дальше": "Next", "Проверить": "Check",
-        "Сдаюсь": "I give up", "Стоп": "Stop", "Дальше →": "Next →",
-        // Errors
-        "Нет доступа к Claude — установите Claude Code (подписка) или введите ключ API в настройках CodeCoach":
-            "No Claude access — install Claude Code (subscription) or paste an API key in CodeCoach settings",
-        "Ключ не принят (401) — проверьте его в настройках": "Key rejected (401) — check it in settings",
-        "Доступ запрещён (403) — нет прав на эту модель": "Forbidden (403) — no access to this model",
-        "Слишком много запросов (429) — подождите немного": "Too many requests (429) — wait a bit",
-        "Модель недоступна при нулевом хранении данных в организации (нужно 30 дней)":
-            "The model is unavailable under zero data retention (30 days required)",
-        "Сбой на стороне API (%d) — попробуйте ещё раз": "API-side failure (%d) — try again",
-        "Ошибка API (%d): %@": "API error (%d): %@",
-        "Модель отклонила запрос: %@": "The model declined the request: %@",
-        "Модель отклонила запрос по правилам безопасности": "The model declined the request for safety reasons",
-        "Нет связи с API: %@": "Cannot reach the API: %@",
-        "Нет доступа к записи экрана — включите CodeCoach в «Конфиденциальность и безопасность → Запись экрана»":
-            "No Screen Recording access — enable CodeCoach in Privacy & Security → Screen Recording",
-        "Лимит подписки Claude исчерпан — попробуйте позже": "Claude subscription limit reached — try later",
-        " (сброс в %@)": " (resets at %@)",
-        "Вы не вошли в Claude Code — выполните claude login в терминале":
-            "You are not logged into Claude Code — run claude login in a terminal",
-        "Нет связи с Claude — проверьте интернет": "Cannot reach Claude — check your connection",
-        "Claude Code завершился без ответа (%@)": "Claude Code finished without an answer (%@)",
-        "Claude Code завершился с ошибкой (код %d)": "Claude Code failed (code %d)",
-        "Не удалось сохранить ключ в %@": "Could not save the key to %@",
+    static let ru: [String: String] = [
+        "Task":
+            "Задача",
+        "Solve the problem":
+            "Разобрать задачу",
+        "⚠️ Accessibility permission missing":
+            "⚠️ Нет доступа к Универсальному доступу",
+        "⚠️ Screen Recording permission missing":
+            "⚠️ Нет доступа к записи экрана",
+        "Python Training…":
+            "Тренировка Python…",
+        "History…":
+            "История разборов…",
+        "Settings…":
+            "Настройки…",
+        "Check for Updates…":
+            "Проверить обновления…",
+        "About CodeCoach":
+            "О CodeCoach",
+        "Quit CodeCoach":
+            "Выйти из CodeCoach",
+        "A trainer for technical-interview problems":
+            "Тренажёр по задачам для технических собеседований",
+        "CodeCoach Settings":
+            "Настройки CodeCoach",
+        "History":
+            "История разборов",
+        "Python Training":
+            "Тренировка Python",
+        "Language":
+            "Язык",
+        "App and answer language":
+            "Язык приложения и ответов",
+        "Permissions":
+            "Доступ",
+        "Accessibility":
+            "Универсальный доступ",
+        "needed to hear the hotkey":
+            "нужен, чтобы слышать горячую клавишу",
+        "Screen Recording":
+            "Запись экрана",
+        "needed to capture the problem; restart CodeCoach after granting":
+            "нужен, чтобы снимать условие задачи; после выдачи перезапустите CodeCoach",
+        "Permission granted but not working — reset":
+            "Разрешение уже выдано, но не работает — сбросить",
+        "Open":
+            "Открыть",
+        "Claude access":
+            "Доступ к Claude",
+        "Claude subscription — via Claude Code":
+            "Подписка Claude — через Claude Code",
+        "Claude Code found; hints run on your subscription — no API key needed":
+            "Claude Code найден, подсказки идут от подписки — ключ API не нужен",
+        "install and log into Claude Code, or paste an API key below":
+            "установите Claude Code и войдите в него, либо введите ключ API ниже",
+        "sk-ant-… (not needed with Claude Code)":
+            "sk-ant-… (не нужен, если есть Claude Code)",
+        "Save":
+            "Сохранить",
+        "Key saved":
+            "Ключ сохранён",
+        "The key is stored at %@ with 0600 permissions. Without a key, hints run through Claude Code on your subscription; a key, when set, takes priority.":
+            "Ключ хранится в %@ с правами 0600. Без ключа подсказки идут через Claude Code от вашей подписки; ключ, если задан, имеет приоритет.",
+        "Hotkey":
+            "Горячая клавиша",
+        "Press a key…":
+            "Нажмите клавишу…",
+        "Cancel":
+            "Отмена",
+        "Change":
+            "Изменить",
+        "Press — new problem. Press again — next hint level. Esc — close.":
+            "Нажатие — новая задача. Ещё раз — следующий уровень подсказки. Esc — закрыть.",
+        "⚠️ This key types a character into the active window. Prefer a modifier or an F-key.":
+            "⚠️ Эта клавиша печатает символ в активное окно. Лучше выбрать модификатор или F-клавишу.",
+        "Solution":
+            "Решение",
+        "Code language":
+            "Язык кода",
+        "Detect from screen":
+            "Определять по экрану",
+        "Solution register":
+            "Уровень разбора",
+        "Junior":
+            "Джун",
+        "Middle":
+            "Мидл",
+        "Senior":
+            "Синьор",
+        "What grade the solution code targets: junior — simple and readable, senior — invariants and trade-offs.":
+            "Каким по грейду должен быть код решения: джуну — просто и читаемо, синьору — с инвариантами и трейд-оффами.",
+        "Code only, no explanations":
+            "Только код, без пояснений",
+        "The solution arrives as one code block — faster and paste-ready. In-code comments stay.":
+            "Решение приходит одним блоком кода — быстрее и сразу вставляется. Комментарии внутри кода остаются.",
+        "Show the solution right away":
+            "Сразу показывать решение",
+        "A register-comparison mode: every press is a fresh capture straight to level 3, no hint ladder. Turn off for actual practice.":
+            "Режим для сравнения грейдов: каждое нажатие — новый снимок и сразу уровень 3, без лестницы подсказок. Для тренировки выключите.",
+        "Keep history":
+            "Хранить историю разборов",
+        "Problems and answers live in %@. They are never written to logs.":
+            "Задачи и ответы лежат в %@. В логи они не пишутся никогда.",
+        "Nudge":
+            "Намёк",
+        "Approach":
+            "Подход",
+        "Capturing the screen…":
+            "Снимаю экран…",
+        "Reading the problem…":
+            "Читаю задачу…",
+        "the model is thinking":
+            "модель думает",
+        "s":
+            "с",
+        "Esc — close":
+            "Esc — закрыть",
+        "‹ › — levels · hotkey — next · Esc — close":
+            "‹ › — уровни · хоткей — дальше · Esc — закрыть",
+        "Hotkey — new problem · Esc — close":
+            "Хоткей — новая задача · Esc — закрыть",
+        "Hotkey again — next level · Esc — close":
+            "Ещё раз хоткей — следующий уровень · Esc — закрыть",
+        "Empty answer — try capturing again":
+            "Пустой ответ — попробуйте снять экран ещё раз",
+        "Retry":
+            "Повторить",
+        "Recapture at the same level":
+            "Переснять экран этим же уровнем",
+        "Open history":
+            "Открыть историю разборов",
+        "Copy code only":
+            "Скопировать только код",
+        "Copy the whole answer":
+            "Скопировать весь ответ",
+        "Previous level":
+            "Предыдущий уровень",
+        "Next of the already fetched":
+            "Следующий из уже полученных",
+        "Close (Esc)":
+            "Закрыть (Esc)",
+        "Select a problem":
+            "Выберите задачу",
+        "Solved problems on the left, newest first.":
+            "Слева — разобранные задачи, свежие сверху.",
+        "No description":
+            "Без описания",
+        "Delete":
+            "Удалить",
+        "Clear all":
+            "Очистить всё",
+        "Delete the entire history?":
+            "Удалить всю историю разборов?",
+        "Screenshots and answers will be permanently removed from disk.":
+            "Скриншоты и ответы будут удалены с диска безвозвратно.",
+        "Getting to know you":
+            "Первое знакомство",
+        "Knowledge map":
+            "Карта знаний",
+        "task %d of %d":
+            "задача %d из %d",
+        "Variables and types":
+            "Переменные и типы",
+        "Strings":
+            "Строки",
+        "Lists and tuples":
+            "Списки и кортежи",
+        "Dicts and sets":
+            "Словари и множества",
+        "Conditions and loops":
+            "Условия и циклы",
+        "Functions":
+            "Функции",
+        "Errors and exceptions":
+            "Ошибки и исключения",
+        "Classes and OOP":
+            "Классы и ООП",
+        "not started":
+            "не начинал",
+        "started":
+            "начал",
+        "confident":
+            "уверенно",
+        "mastered":
+            "освоил",
+        "Five short tasks to see what you already know. Write code right here in the field below; when ready, hit “Check”.":
+            "Пять коротких задач, чтобы понять, что ты уже знаешь. Пиши код прямо здесь, в поле ниже; когда готов — жми «Проверить».",
+        "Hit “Next” to get a task at your level.":
+            "Нажми «Дальше» — получишь задачу под свой уровень.",
+        "the mentor is looking…":
+            "наставник смотрит…",
+        "Your code":
+            "Твой код",
+        "Start":
+            "Начать",
+        "Next":
+            "Дальше",
+        "Check":
+            "Проверить",
+        "I give up":
+            "Сдаюсь",
+        "Stop":
+            "Стоп",
+        "Next →":
+            "Дальше →",
+        "No Claude access — install Claude Code (subscription) or paste an API key in CodeCoach settings":
+            "Нет доступа к Claude — установите Claude Code (подписка) или введите ключ API в настройках CodeCoach",
+        "Key rejected (401) — check it in settings":
+            "Ключ не принят (401) — проверьте его в настройках",
+        "Forbidden (403) — no access to this model":
+            "Доступ запрещён (403) — нет прав на эту модель",
+        "Too many requests (429) — wait a bit":
+            "Слишком много запросов (429) — подождите немного",
+        "The model is unavailable under zero data retention (30 days required)":
+            "Модель недоступна при нулевом хранении данных в организации (нужно 30 дней)",
+        "API-side failure (%d) — try again":
+            "Сбой на стороне API (%d) — попробуйте ещё раз",
+        "API error (%d): %@":
+            "Ошибка API (%d): %@",
+        "The model declined the request: %@":
+            "Модель отклонила запрос: %@",
+        "The model declined the request for safety reasons":
+            "Модель отклонила запрос по правилам безопасности",
+        "Cannot reach the API: %@":
+            "Нет связи с API: %@",
+        "No Screen Recording access — enable CodeCoach in Privacy & Security → Screen Recording":
+            "Нет доступа к записи экрана — включите CodeCoach в «Конфиденциальность и безопасность → Запись экрана»",
+        "Claude subscription limit reached — try later":
+            "Лимит подписки Claude исчерпан — попробуйте позже",
+        " (resets at %@)":
+            " (сброс в %@)",
+        "You are not logged into Claude Code — run claude login in a terminal":
+            "Вы не вошли в Claude Code — выполните claude login в терминале",
+        "Cannot reach Claude — check your connection":
+            "Нет связи с Claude — проверьте интернет",
+        "Claude Code finished without an answer (%@)":
+            "Claude Code завершился без ответа (%@)",
+        "Claude Code failed (code %d)":
+            "Claude Code завершился с ошибкой (код %d)",
+        "Could not save the key to %@":
+            "Не удалось сохранить ключ в %@",
+        "Could not determine which display to capture":
+            "Не удалось определить экран для снимка",
+        "Could not encode the screenshot":
+            "Не удалось закодировать снимок экрана",
     ]
 
     static let uk: [String: String] = [
-        "Разобрать задачу": "Розібрати задачу",
-        "⚠️ Нет доступа к Универсальному доступу": "⚠️ Немає дозволу «Універсальний доступ»",
-        "⚠️ Нет доступа к записи экрана": "⚠️ Немає дозволу на запис екрана",
-        "Тренировка Python…": "Тренування Python…",
-        "История разборов…": "Історія розборів…",
-        "Настройки…": "Налаштування…",
-        "Проверить обновления…": "Перевірити оновлення…",
-        "О CodeCoach": "Про CodeCoach",
-        "Выйти из CodeCoach": "Вийти з CodeCoach",
-        "Тренажёр по задачам для технических собеседований": "Тренажер із задач для технічних співбесід",
-        "Настройки CodeCoach": "Налаштування CodeCoach",
-        "История разборов": "Історія розборів",
-        "Тренировка Python": "Тренування Python",
-        "Язык": "Мова",
-        "Язык приложения и ответов": "Мова застосунку та відповідей",
-        "Доступ": "Дозволи",
-        "Универсальный доступ": "Універсальний доступ",
-        "нужен, чтобы слышать горячую клавишу": "потрібен, щоб чути гарячу клавішу",
-        "Запись экрана": "Запис екрана",
-        "нужен, чтобы снимать условие задачи; после выдачи перезапустите CodeCoach":
+        "Task":
+            "Задача",
+        "Solve the problem":
+            "Розібрати задачу",
+        "⚠️ Accessibility permission missing":
+            "⚠️ Немає дозволу «Універсальний доступ»",
+        "⚠️ Screen Recording permission missing":
+            "⚠️ Немає дозволу на запис екрана",
+        "Python Training…":
+            "Тренування Python…",
+        "History…":
+            "Історія розборів…",
+        "Settings…":
+            "Налаштування…",
+        "Check for Updates…":
+            "Перевірити оновлення…",
+        "About CodeCoach":
+            "Про CodeCoach",
+        "Quit CodeCoach":
+            "Вийти з CodeCoach",
+        "A trainer for technical-interview problems":
+            "Тренажер із задач для технічних співбесід",
+        "CodeCoach Settings":
+            "Налаштування CodeCoach",
+        "History":
+            "Історія розборів",
+        "Python Training":
+            "Тренування Python",
+        "Language":
+            "Мова",
+        "App and answer language":
+            "Мова застосунку та відповідей",
+        "Permissions":
+            "Дозволи",
+        "Accessibility":
+            "Універсальний доступ",
+        "needed to hear the hotkey":
+            "потрібен, щоб чути гарячу клавішу",
+        "Screen Recording":
+            "Запис екрана",
+        "needed to capture the problem; restart CodeCoach after granting":
             "потрібен, щоб знімати умову задачі; після надання перезапустіть CodeCoach",
-        "Разрешение уже выдано, но не работает — сбросить":
+        "Permission granted but not working — reset":
             "Дозвіл надано, але не працює — скинути",
-        "Открыть": "Відкрити",
-        "Доступ к Claude": "Доступ до Claude",
-        "Подписка Claude — через Claude Code": "Підписка Claude — через Claude Code",
-        "Claude Code найден, подсказки идут от подписки — ключ API не нужен":
+        "Open":
+            "Відкрити",
+        "Claude access":
+            "Доступ до Claude",
+        "Claude subscription — via Claude Code":
+            "Підписка Claude — через Claude Code",
+        "Claude Code found; hints run on your subscription — no API key needed":
             "Claude Code знайдено, підказки йдуть від підписки — ключ API не потрібен",
-        "установите Claude Code и войдите в него, либо введите ключ API ниже":
+        "install and log into Claude Code, or paste an API key below":
             "встановіть Claude Code і ввійдіть у нього, або введіть ключ API нижче",
-        "sk-ant-… (не нужен, если есть Claude Code)": "sk-ant-… (не потрібен, якщо є Claude Code)",
-        "Сохранить": "Зберегти",
-        "Ключ сохранён": "Ключ збережено",
-        "Ключ хранится в %@ с правами 0600. Без ключа подсказки идут через Claude Code от вашей подписки; ключ, если задан, имеет приоритет.":
+        "sk-ant-… (not needed with Claude Code)":
+            "sk-ant-… (не потрібен, якщо є Claude Code)",
+        "Save":
+            "Зберегти",
+        "Key saved":
+            "Ключ збережено",
+        "The key is stored at %@ with 0600 permissions. Without a key, hints run through Claude Code on your subscription; a key, when set, takes priority.":
             "Ключ зберігається в %@ із правами 0600. Без ключа підказки йдуть через Claude Code від вашої підписки; ключ, якщо задано, має пріоритет.",
-        "Горячая клавиша": "Гаряча клавіша",
-        "Нажмите клавишу…": "Натисніть клавішу…",
-        "Отмена": "Скасувати",
-        "Изменить": "Змінити",
-        "Нажатие — новая задача. Ещё раз — следующий уровень подсказки. Esc — закрыть.":
+        "Hotkey":
+            "Гаряча клавіша",
+        "Press a key…":
+            "Натисніть клавішу…",
+        "Cancel":
+            "Скасувати",
+        "Change":
+            "Змінити",
+        "Press — new problem. Press again — next hint level. Esc — close.":
             "Натискання — нова задача. Ще раз — наступний рівень підказки. Esc — закрити.",
-        "⚠️ Эта клавиша печатает символ в активное окно. Лучше выбрать модификатор или F-клавишу.":
+        "⚠️ This key types a character into the active window. Prefer a modifier or an F-key.":
             "⚠️ Ця клавіша друкує символ в активне вікно. Краще обрати модифікатор або F-клавішу.",
-        "Решение": "Розв'язок",
-        "Язык кода": "Мова коду",
-        "Определять по экрану": "Визначати з екрана",
-        "Уровень разбора": "Рівень розбору",
-        "Джун": "Джун", "Мидл": "Мідл", "Синьор": "Сеньйор",
-        "Каким по грейду должен быть код решения: джуну — просто и читаемо, синьору — с инвариантами и трейд-оффами.":
+        "Solution":
+            "Розв'язок",
+        "Code language":
+            "Мова коду",
+        "Detect from screen":
+            "Визначати з екрана",
+        "Solution register":
+            "Рівень розбору",
+        "Junior":
+            "Джун",
+        "Middle":
+            "Мідл",
+        "Senior":
+            "Сеньйор",
+        "What grade the solution code targets: junior — simple and readable, senior — invariants and trade-offs.":
             "Яким за грейдом має бути код розв'язку: джуну — просто й читабельно, сеньйору — з інваріантами та трейд-офами.",
-        "Только код, без пояснений": "Лише код, без пояснень",
-        "Решение приходит одним блоком кода — быстрее и сразу вставляется. Комментарии внутри кода остаются.":
+        "Code only, no explanations":
+            "Лише код, без пояснень",
+        "The solution arrives as one code block — faster and paste-ready. In-code comments stay.":
             "Розв'язок приходить одним блоком коду — швидше й одразу вставляється. Коментарі в коді лишаються.",
-        "Сразу показывать решение": "Одразу показувати розв'язок",
-        "Режим для сравнения грейдов: каждое нажатие — новый снимок и сразу уровень 3, без лестницы подсказок. Для тренировки выключите.":
+        "Show the solution right away":
+            "Одразу показувати розв'язок",
+        "A register-comparison mode: every press is a fresh capture straight to level 3, no hint ladder. Turn off for actual practice.":
             "Режим для порівняння грейдів: кожне натискання — новий знімок і одразу рівень 3, без драбини підказок. Для тренування вимкніть.",
-        "Хранить историю разборов": "Зберігати історію розборів",
-        "Задачи и ответы лежат в %@. В логи они не пишутся никогда.":
+        "Keep history":
+            "Зберігати історію розборів",
+        "Problems and answers live in %@. They are never written to logs.":
             "Задачі та відповіді лежать у %@. У логи вони не пишуться ніколи.",
-        "Намёк": "Натяк", "Подход": "Підхід",
-        "Снимаю экран…": "Знімаю екран…",
-        "Читаю задачу…": "Читаю задачу…",
-        "модель думает": "модель думає",
-        "с": "с",
-        "Esc — закрыть": "Esc — закрити",
-        "‹ › — уровни · хоткей — дальше · Esc — закрыть": "‹ › — рівні · хоткей — далі · Esc — закрити",
-        "Хоткей — новая задача · Esc — закрыть": "Хоткей — нова задача · Esc — закрити",
-        "Ещё раз хоткей — следующий уровень · Esc — закрыть": "Ще раз хоткей — наступний рівень · Esc — закрити",
-        "Пустой ответ — попробуйте снять экран ещё раз": "Порожня відповідь — спробуйте зняти екран ще раз",
-        "Повторить": "Повторити",
-        "Переснять экран этим же уровнем": "Перезняти екран цим самим рівнем",
-        "Открыть историю разборов": "Відкрити історію розборів",
-        "Скопировать только код": "Скопіювати лише код",
-        "Скопировать весь ответ": "Скопіювати всю відповідь",
-        "Предыдущий уровень": "Попередній рівень",
-        "Следующий из уже полученных": "Наступний з уже отриманих",
-        "Закрыть (Esc)": "Закрити (Esc)",
-        "Выберите задачу": "Оберіть задачу",
-        "Слева — разобранные задачи, свежие сверху.": "Ліворуч — розібрані задачі, свіжі згори.",
-        "Без описания": "Без опису",
-        "Удалить": "Видалити",
-        "Очистить всё": "Очистити все",
-        "Удалить всю историю разборов?": "Видалити всю історію розборів?",
-        "Скриншоты и ответы будут удалены с диска безвозвратно.":
+        "Nudge":
+            "Натяк",
+        "Approach":
+            "Підхід",
+        "Capturing the screen…":
+            "Знімаю екран…",
+        "Reading the problem…":
+            "Читаю задачу…",
+        "the model is thinking":
+            "модель думає",
+        "s":
+            "с",
+        "Esc — close":
+            "Esc — закрити",
+        "‹ › — levels · hotkey — next · Esc — close":
+            "‹ › — рівні · хоткей — далі · Esc — закрити",
+        "Hotkey — new problem · Esc — close":
+            "Хоткей — нова задача · Esc — закрити",
+        "Hotkey again — next level · Esc — close":
+            "Ще раз хоткей — наступний рівень · Esc — закрити",
+        "Empty answer — try capturing again":
+            "Порожня відповідь — спробуйте зняти екран ще раз",
+        "Retry":
+            "Повторити",
+        "Recapture at the same level":
+            "Перезняти екран цим самим рівнем",
+        "Open history":
+            "Відкрити історію розборів",
+        "Copy code only":
+            "Скопіювати лише код",
+        "Copy the whole answer":
+            "Скопіювати всю відповідь",
+        "Previous level":
+            "Попередній рівень",
+        "Next of the already fetched":
+            "Наступний з уже отриманих",
+        "Close (Esc)":
+            "Закрити (Esc)",
+        "Select a problem":
+            "Оберіть задачу",
+        "Solved problems on the left, newest first.":
+            "Ліворуч — розібрані задачі, свіжі згори.",
+        "No description":
+            "Без опису",
+        "Delete":
+            "Видалити",
+        "Clear all":
+            "Очистити все",
+        "Delete the entire history?":
+            "Видалити всю історію розборів?",
+        "Screenshots and answers will be permanently removed from disk.":
             "Скриншоти та відповіді буде безповоротно видалено з диска.",
-        "Первое знакомство": "Перше знайомство",
-        "Карта знаний": "Карта знань",
-        "задача %d из %d": "задача %d з %d",
-        "Переменные и типы": "Змінні й типи", "Строки": "Рядки",
-        "Списки и кортежи": "Списки й кортежі", "Словари и множества": "Словники й множини",
-        "Условия и циклы": "Умови й цикли", "Функции": "Функції",
-        "Ошибки и исключения": "Помилки й винятки", "Классы и ООП": "Класи й ООП",
-        "не начинал": "не починав", "начал": "почав", "уверенно": "упевнено", "освоил": "опанував",
-        "Пять коротких задач, чтобы понять, что ты уже знаешь. Пиши код прямо здесь, в поле ниже; когда готов — жми «Проверить».":
+        "Getting to know you":
+            "Перше знайомство",
+        "Knowledge map":
+            "Карта знань",
+        "task %d of %d":
+            "задача %d з %d",
+        "Variables and types":
+            "Змінні й типи",
+        "Strings":
+            "Рядки",
+        "Lists and tuples":
+            "Списки й кортежі",
+        "Dicts and sets":
+            "Словники й множини",
+        "Conditions and loops":
+            "Умови й цикли",
+        "Functions":
+            "Функції",
+        "Errors and exceptions":
+            "Помилки й винятки",
+        "Classes and OOP":
+            "Класи й ООП",
+        "not started":
+            "не починав",
+        "started":
+            "почав",
+        "confident":
+            "упевнено",
+        "mastered":
+            "опанував",
+        "Five short tasks to see what you already know. Write code right here in the field below; when ready, hit “Check”.":
             "П'ять коротких задач, щоб зрозуміти, що ти вже знаєш. Пиши код просто тут, у полі нижче; коли готовий — тисни «Перевірити».",
-        "Нажми «Дальше» — получишь задачу под свой уровень.": "Натисни «Далі» — отримаєш задачу під свій рівень.",
-        "наставник смотрит…": "наставник дивиться…",
-        "Твой код": "Твій код",
-        "Начать": "Почати", "Дальше": "Далі", "Проверить": "Перевірити",
-        "Сдаюсь": "Здаюся", "Стоп": "Стоп", "Дальше →": "Далі →",
-        "Нет доступа к Claude — установите Claude Code (подписка) или введите ключ API в настройках CodeCoach":
+        "Hit “Next” to get a task at your level.":
+            "Натисни «Далі» — отримаєш задачу під свій рівень.",
+        "the mentor is looking…":
+            "наставник дивиться…",
+        "Your code":
+            "Твій код",
+        "Start":
+            "Почати",
+        "Next":
+            "Далі",
+        "Check":
+            "Перевірити",
+        "I give up":
+            "Здаюся",
+        "Stop":
+            "Стоп",
+        "Next →":
+            "Далі →",
+        "No Claude access — install Claude Code (subscription) or paste an API key in CodeCoach settings":
             "Немає доступу до Claude — встановіть Claude Code (підписка) або введіть ключ API в налаштуваннях CodeCoach",
-        "Ключ не принят (401) — проверьте его в настройках": "Ключ не прийнято (401) — перевірте його в налаштуваннях",
-        "Доступ запрещён (403) — нет прав на эту модель": "Доступ заборонено (403) — немає прав на цю модель",
-        "Слишком много запросов (429) — подождите немного": "Забагато запитів (429) — зачекайте трохи",
-        "Модель недоступна при нулевом хранении данных в организации (нужно 30 дней)":
+        "Key rejected (401) — check it in settings":
+            "Ключ не прийнято (401) — перевірте його в налаштуваннях",
+        "Forbidden (403) — no access to this model":
+            "Доступ заборонено (403) — немає прав на цю модель",
+        "Too many requests (429) — wait a bit":
+            "Забагато запитів (429) — зачекайте трохи",
+        "The model is unavailable under zero data retention (30 days required)":
             "Модель недоступна за нульового зберігання даних в організації (потрібно 30 днів)",
-        "Сбой на стороне API (%d) — попробуйте ещё раз": "Збій на боці API (%d) — спробуйте ще раз",
-        "Ошибка API (%d): %@": "Помилка API (%d): %@",
-        "Модель отклонила запрос: %@": "Модель відхилила запит: %@",
-        "Модель отклонила запрос по правилам безопасности": "Модель відхилила запит за правилами безпеки",
-        "Нет связи с API: %@": "Немає зв'язку з API: %@",
-        "Нет доступа к записи экрана — включите CodeCoach в «Конфиденциальность и безопасность → Запись экрана»":
+        "API-side failure (%d) — try again":
+            "Збій на боці API (%d) — спробуйте ще раз",
+        "API error (%d): %@":
+            "Помилка API (%d): %@",
+        "The model declined the request: %@":
+            "Модель відхилила запит: %@",
+        "The model declined the request for safety reasons":
+            "Модель відхилила запит за правилами безпеки",
+        "Cannot reach the API: %@":
+            "Немає зв'язку з API: %@",
+        "No Screen Recording access — enable CodeCoach in Privacy & Security → Screen Recording":
             "Немає доступу до запису екрана — увімкніть CodeCoach у «Конфіденційність і безпека → Запис екрана»",
-        "Лимит подписки Claude исчерпан — попробуйте позже": "Ліміт підписки Claude вичерпано — спробуйте пізніше",
-        " (сброс в %@)": " (скидання о %@)",
-        "Вы не вошли в Claude Code — выполните claude login в терминале":
+        "Claude subscription limit reached — try later":
+            "Ліміт підписки Claude вичерпано — спробуйте пізніше",
+        " (resets at %@)":
+            " (скидання о %@)",
+        "You are not logged into Claude Code — run claude login in a terminal":
             "Ви не ввійшли в Claude Code — виконайте claude login у терміналі",
-        "Нет связи с Claude — проверьте интернет": "Немає зв'язку з Claude — перевірте інтернет",
-        "Claude Code завершился без ответа (%@)": "Claude Code завершився без відповіді (%@)",
-        "Claude Code завершился с ошибкой (код %d)": "Claude Code завершився з помилкою (код %d)",
-        "Не удалось сохранить ключ в %@": "Не вдалося зберегти ключ у %@",
+        "Cannot reach Claude — check your connection":
+            "Немає зв'язку з Claude — перевірте інтернет",
+        "Claude Code finished without an answer (%@)":
+            "Claude Code завершився без відповіді (%@)",
+        "Claude Code failed (code %d)":
+            "Claude Code завершився з помилкою (код %d)",
+        "Could not save the key to %@":
+            "Не вдалося зберегти ключ у %@",
+        "Could not determine which display to capture":
+            "Не вдалося визначити екран для знімка",
+        "Could not encode the screenshot":
+            "Не вдалося закодувати знімок екрана",
     ]
 }
 
-/// Translate a Russian base string.
-func L(_ ru: String) -> String { Localization.shared.translate(ru) }
+/// Translate an English base string.
+func L(_ en: String) -> String { Localization.shared.translate(en) }
 
-/// Translate a Russian format string, then substitute the arguments.
-func LF(_ ru: String, _ args: CVarArg...) -> String {
-    String(format: Localization.shared.translate(ru), arguments: args)
+/// Translate an English format string, then substitute the arguments.
+func LF(_ en: String, _ args: CVarArg...) -> String {
+    String(format: Localization.shared.translate(en), arguments: args)
 }

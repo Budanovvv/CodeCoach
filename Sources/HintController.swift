@@ -52,7 +52,7 @@ final class HintController {
         // Cheap fail-fast only: Claude Code present or a key on disk. Whether
         // Claude Code is actually logged in is discovered by the request itself.
         guard Auth.anySourceAvailable else {
-            panel.showError(L("Нет доступа к Claude — установите Claude Code (подписка) или введите ключ API в настройках CodeCoach"))
+            panel.showError(L("No Claude access — install Claude Code (subscription) or paste an API key in CodeCoach settings"))
             return
         }
         // A press while a request is in flight is a mis-press, not a queue: the

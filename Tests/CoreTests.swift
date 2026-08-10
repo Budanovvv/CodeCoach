@@ -50,15 +50,15 @@ final class PromptsTests: XCTestCase {
         // The product IS this restraint: a level-1 prompt that permits code
         // turns the trainer into a cheat sheet.
         let nudge = Prompts.instruction(for: .nudge, language: nil)
-        XCTAssertTrue(nudge.contains("ЗАПРЕЩЕНО"))
-        XCTAssertTrue(nudge.localizedCaseInsensitiveContains("код"))
+        XCTAssertTrue(nudge.contains("FORBIDDEN"))
+        XCTAssertTrue(nudge.localizedCaseInsensitiveContains("code"))
 
         let approach = Prompts.instruction(for: .approach, language: nil)
-        XCTAssertTrue(approach.contains("ЗАПРЕЩЕНО"))
+        XCTAssertTrue(approach.contains("FORBIDDEN"))
 
         // Only the last rung is allowed to hand over a solution.
         let solution = Prompts.instruction(for: .solution, language: nil)
-        XCTAssertFalse(solution.contains("ЗАПРЕЩЕНО"))
+        XCTAssertFalse(solution.contains("FORBIDDEN"))
     }
 
     func testLanguagePreferenceStillDefersToTheScreenshot() {
@@ -66,10 +66,10 @@ final class PromptsTests: XCTestCase {
         XCTAssertTrue(withLang.contains("Python"))
         // A configured language must not override what is visibly on screen —
         // the user's editor is the ground truth during an exercise.
-        XCTAssertTrue(withLang.localizedCaseInsensitiveContains("на экране"))
+        XCTAssertTrue(withLang.localizedCaseInsensitiveContains("on screen"))
 
         let noLang = Prompts.instruction(for: .solution, language: nil)
-        XCTAssertTrue(noLang.localizedCaseInsensitiveContains("скриншот"))
+        XCTAssertTrue(noLang.localizedCaseInsensitiveContains("screenshot"))
     }
 
     func testSeniorityShapesOnlyTheSolution() {
@@ -90,7 +90,7 @@ final class PromptsTests: XCTestCase {
         }
         XCTAssertEqual(Set(variants).count, Seniority.allCases.count)
         for v in variants {
-            XCTAssertTrue(v.contains("Рабочий код целиком"))
+            XCTAssertTrue(v.contains("working code in full"))
         }
     }
 
@@ -107,14 +107,13 @@ final class PromptsTests: XCTestCase {
 
             let solution = Prompts.instruction(
                 for: .solution, language: nil, seniority: s, codeOnly: true)
-            XCTAssertTrue(solution.contains("ТОЛЬКО КОД"), "grade \(s.rawValue)")
-            XCTAssertTrue(solution.contains("рабочий код целиком")
-                          || solution.contains("Рабочий код целиком"), "grade \(s.rawValue)")
+            XCTAssertTrue(solution.contains("CODE ONLY"), "grade \(s.rawValue)")
+            XCTAssertTrue(solution.localizedCaseInsensitiveContains("working code in full"), "grade \(s.rawValue)")
             // The prose the flag exists to remove must actually be gone.
-            XCTAssertFalse(solution.contains("интервьюер"), "grade \(s.rawValue)")
+            XCTAssertFalse(solution.contains("interviewer"), "grade \(s.rawValue)")
             // ...except the one allowed line: unexplained imports in pasted
             // code are a whiteboard question the user cannot answer.
-            XCTAssertTrue(solution.contains("библиотек"), "grade \(s.rawValue)")
+            XCTAssertTrue(solution.contains("libraries"), "grade \(s.rawValue)")
         }
     }
 
@@ -189,8 +188,8 @@ final class AnswerFormatTests: XCTestCase {
 final class LocalizationTests: XCTestCase {
 
     func testEveryTableEntryIsNonEmpty() {
-        for (key, value) in Localization.en {
-            XCTAssertFalse(value.trimmingCharacters(in: .whitespaces).isEmpty, "en: \(key)")
+        for (key, value) in Localization.ru {
+            XCTAssertFalse(value.trimmingCharacters(in: .whitespaces).isEmpty, "ru: \(key)")
         }
         for (key, value) in Localization.uk {
             XCTAssertFalse(value.trimmingCharacters(in: .whitespaces).isEmpty, "uk: \(key)")
@@ -201,7 +200,7 @@ final class LocalizationTests: XCTestCase {
         // A dropped %@ or %d in a translation would crash String(format:) or
         // silently swallow the argument. Both tables must keep every
         // placeholder of their key.
-        for table in [Localization.en, Localization.uk] {
+        for table in [Localization.ru, Localization.uk] {
             for (key, value) in table {
                 for marker in ["%@", "%d"] {
                     XCTAssertEqual(
@@ -221,28 +220,28 @@ final class LocalizationTests: XCTestCase {
         XCTAssertTrue(TrainerPrompts.system.contains(Localization.shared.answerRule))
     }
 
-    func testMachineMarkersStayRussianInEveryLanguage() {
+    func testMachineMarkersStayEnglishInEveryLanguage() {
         // The verdict and title markers are parsed by code, so the prompts pin
-        // them to the exact Russian spelling regardless of answer language.
-        XCTAssertTrue(TrainerPrompts.review(taskText: "t", code: "c").contains("ИТОГ:"))
+        // them to the exact English spelling regardless of answer language.
+        XCTAssertTrue(TrainerPrompts.review(taskText: "t", code: "c").contains("VERDICT:"))
         XCTAssertTrue(TrainerPrompts
             .generateTask(topic: .strings, level: .started, avoidTitles: [])
-            .contains("НАЗВАНИЕ:"))
+            .contains("TITLE:"))
     }
 }
 
 final class TrainerTests: XCTestCase {
 
     func testVerdictParsing() {
-        XCTAssertEqual(Trainer.parseVerdict(from: "Молодец!\nИТОГ: решено"), .solved)
-        XCTAssertEqual(Trainer.parseVerdict(from: "Есть ошибка.\n ИТОГ: частично "), .partial)
-        XCTAssertEqual(Trainer.parseVerdict(from: "ИТОГ: не решено"), .failed)
+        XCTAssertEqual(Trainer.parseVerdict(from: "Молодец!\nVERDICT: solved"), .solved)
+        XCTAssertEqual(Trainer.parseVerdict(from: "Есть ошибка.\n VERDICT: partial "), .partial)
+        XCTAssertEqual(Trainer.parseVerdict(from: "VERDICT: not solved"), .failed)
         // The word appearing mid-explanation must not confuse the parser —
         // only the last ИТОГ line counts.
         XCTAssertEqual(
-            Trainer.parseVerdict(from: "Прошлый ИТОГ: решено был неверен.\nИТОГ: частично"),
+            Trainer.parseVerdict(from: "The previous VERDICT: solved was wrong.\nVERDICT: partial"),
             .partial)
-        XCTAssertNil(Trainer.parseVerdict(from: "никакого вердикта"))
+        XCTAssertNil(Trainer.parseVerdict(from: "no verdict at all"))
     }
 
     func testMapUpdateRules() {
@@ -288,17 +287,17 @@ final class TrainerTests: XCTestCase {
         // solution over; the hint must forbid code. Same product rule as the
         // interview ladder, and more load-bearing for a learner.
         let review = TrainerPrompts.review(taskText: "задача", code: "print(1)")
-        XCTAssertTrue(review.contains("ИТОГ:"))
-        XCTAssertTrue(review.contains("ЗАПРЕЩЕНО"))
+        XCTAssertTrue(review.contains("VERDICT:"))
+        XCTAssertTrue(review.contains("FORBIDDEN"))
         XCTAssertTrue(review.contains("print(1)"))
 
         let hint = TrainerPrompts.hint(taskText: "задача")
-        XCTAssertTrue(hint.contains("ЗАПРЕЩЕНО"))
+        XCTAssertTrue(hint.contains("FORBIDDEN"))
 
         // Task generation must not leak a solution either.
         let task = TrainerPrompts.generateTask(topic: .strings, level: .started, avoidTitles: [])
-        XCTAssertTrue(task.contains("БЕЗ решения"))
-        XCTAssertTrue(task.contains("НАЗВАНИЕ:"))
+        XCTAssertTrue(task.contains("NO solution"))
+        XCTAssertTrue(task.contains("TITLE:"))
 
         // Nothing volatile in the system prompt (it is the cacheable prefix).
         XCTAssertEqual(TrainerPrompts.system, TrainerPrompts.system)

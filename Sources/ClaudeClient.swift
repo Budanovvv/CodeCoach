@@ -38,24 +38,24 @@ final class ClaudeClient {
         var errorDescription: String? {
             switch self {
             case .noCredentials:
-                return L("Нет доступа к Claude — установите Claude Code (подписка) или введите ключ API в настройках CodeCoach")
+                return L("No Claude access — install Claude Code (subscription) or paste an API key in CodeCoach settings")
             case .http(let status, let message):
                 switch status {
-                case 401: return L("Ключ не принят (401) — проверьте его в настройках")
-                case 403: return L("Доступ запрещён (403) — нет прав на эту модель")
-                case 429: return L("Слишком много запросов (429) — подождите немного")
+                case 401: return L("Key rejected (401) — check it in settings")
+                case 403: return L("Forbidden (403) — no access to this model")
+                case 429: return L("Too many requests (429) — wait a bit")
                 case 400 where message.localizedCaseInsensitiveContains("retention"):
                     // Fable 5 requires 30-day retention and rejects every request
                     // from a zero-data-retention org, with a payload that looks fine.
-                    return L("Модель недоступна при нулевом хранении данных в организации (нужно 30 дней)")
-                case 500...599: return LF("Сбой на стороне API (%d) — попробуйте ещё раз", status)
-                default: return LF("Ошибка API (%d): %@", status, message)
+                    return L("The model is unavailable under zero data retention (30 days required)")
+                case 500...599: return LF("API-side failure (%d) — try again", status)
+                default: return LF("API error (%d): %@", status, message)
                 }
             case .refused(let explanation):
-                return explanation.map { LF("Модель отклонила запрос: %@", $0) }
-                    ?? L("Модель отклонила запрос по правилам безопасности")
+                return explanation.map { LF("The model declined the request: %@", $0) }
+                    ?? L("The model declined the request for safety reasons")
             case .transport(let message):
-                return LF("Нет связи с API: %@", message)
+                return LF("Cannot reach the API: %@", message)
             case .cli(let message):
                 return message
             }

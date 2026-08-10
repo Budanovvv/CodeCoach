@@ -32,7 +32,7 @@ struct TrainerView: View {
 
     private var editor: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(L("Твой код"))
+            Text(L("Your code"))
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)
             CodeEditor(text: $controller.codeInput)
@@ -48,10 +48,10 @@ struct TrainerView: View {
     private var topicMap: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(controller.probeIndex != nil ? L("Первое знакомство") : L("Карта знаний"))
+                Text(controller.probeIndex != nil ? L("Getting to know you") : L("Knowledge map"))
                     .font(.system(size: 12, weight: .semibold))
                 if let index = controller.probeIndex {
-                    Text(LF("задача %d из %d", min(index + 1, Trainer.probeTopics.count), Trainer.probeTopics.count))
+                    Text(LF("task %d of %d", min(index + 1, Trainer.probeTopics.count), Trainer.probeTopics.count))
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
@@ -99,8 +99,8 @@ struct TrainerView: View {
                 switch controller.phase {
                 case .idle:
                     Text(controller.probeIndex != nil
-                         ? L("Пять коротких задач, чтобы понять, что ты уже знаешь. Пиши код прямо здесь, в поле ниже; когда готов — жми «Проверить».")
-                         : L("Нажми «Дальше» — получишь задачу под свой уровень."))
+                         ? L("Five short tasks to see what you already know. Write code right here in the field below; when ready, hit “Check”.")
+                         : L("Hit “Next” to get a task at your level."))
                         .font(.system(size: 13))
                         .foregroundStyle(.secondary)
                 case .failed(let message):
@@ -122,7 +122,7 @@ struct TrainerView: View {
                     } else if controller.phase == .responding {
                         HStack(spacing: 6) {
                             ProgressView().controlSize(.small)
-                            Text(L("наставник смотрит…"))
+                            Text(L("the mentor is looking…"))
                                 .font(.system(size: 11)).foregroundStyle(.secondary)
                         }
                     }
@@ -164,24 +164,24 @@ struct TrainerView: View {
     private var buttons: some View {
         HStack(spacing: 10) {
             if controller.phase == .idle {
-                Button(controller.probeIndex != nil ? L("Начать") : L("Дальше")) {
+                Button(controller.probeIndex != nil ? L("Start") : L("Next")) {
                     controller.nextTask()
                 }
                 .keyboardShortcut(.defaultAction)
             } else {
-                Button(L("Проверить")) { controller.review() }
+                Button(L("Check")) { controller.review() }
                     .disabled(controller.isBusy || controller.taskText.isEmpty
                               || controller.codeInput.trimmingCharacters(
                                   in: .whitespacesAndNewlines).isEmpty)
-                Button(L("Намёк")) { controller.hint() }
+                Button(L("Nudge")) { controller.hint() }
                     .disabled(controller.isBusy || controller.taskText.isEmpty)
-                Button(L("Сдаюсь")) { controller.giveUp() }
+                Button(L("I give up")) { controller.giveUp() }
                     .disabled(controller.isBusy || controller.taskText.isEmpty)
                 Spacer()
                 if controller.isBusy {
-                    Button(L("Стоп")) { controller.cancel() }
+                    Button(L("Stop")) { controller.cancel() }
                 } else {
-                    Button(L("Дальше →")) { controller.nextTask() }
+                    Button(L("Next →")) { controller.nextTask() }
                         .disabled(controller.taskText.isEmpty)
                 }
             }

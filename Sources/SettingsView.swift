@@ -25,8 +25,8 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section(L("Язык")) {
-                Picker(L("Язык приложения и ответов"), selection: $uiLanguage) {
+            Section(L("Language")) {
+                Picker(L("App and answer language"), selection: $uiLanguage) {
                     ForEach(AppLanguage.allCases) { lang in
                         Text(lang.label).tag(lang)
                     }
@@ -36,15 +36,15 @@ struct SettingsView: View {
                 }
             }
 
-            Section(L("Доступ")) {
+            Section(L("Permissions")) {
                 permissionRow(
-                    title: L("Универсальный доступ"),
-                    detail: L("нужен, чтобы слышать горячую клавишу"),
+                    title: L("Accessibility"),
+                    detail: L("needed to hear the hotkey"),
                     granted: accessibilityOK,
                     action: Permissions.openAccessibilitySettings)
                 permissionRow(
-                    title: L("Запись экрана"),
-                    detail: L("нужен, чтобы снимать условие задачи; после выдачи перезапустите CodeCoach"),
+                    title: L("Screen Recording"),
+                    detail: L("needed to capture the problem; restart CodeCoach after granting"),
                     granted: screenOK,
                     action: Permissions.promptOrRevealScreenRecording)
 
@@ -53,34 +53,34 @@ struct SettingsView: View {
                     // ON while AXIsProcessTrusted() still returns false, so the
                     // user can neither grant the permission nor understand why
                     // it is refused. Resetting our own record restores the prompt.
-                    Button(L("Разрешение уже выдано, но не работает — сбросить")) {
+                    Button(L("Permission granted but not working — reset")) {
                         Permissions.resetAccessibility()
                     }
                     .font(.system(size: 11))
                 }
             }
 
-            Section(L("Доступ к Claude")) {
+            Section(L("Claude access")) {
                 HStack(alignment: .firstTextBaseline) {
                     Image(systemName: subscriptionOK ? "checkmark.circle.fill" : "circle")
                         .foregroundStyle(subscriptionOK ? Color.green : Color.secondary)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(L("Подписка Claude — через Claude Code")).font(.system(size: 12))
+                        Text(L("Claude subscription — via Claude Code")).font(.system(size: 12))
                         Text(subscriptionOK
-                             ? L("Claude Code найден, подсказки идут от подписки — ключ API не нужен")
-                             : L("установите Claude Code и войдите в него, либо введите ключ API ниже"))
+                             ? L("Claude Code found; hints run on your subscription — no API key needed")
+                             : L("install and log into Claude Code, or paste an API key below"))
                             .font(.system(size: 10))
                             .foregroundStyle(.tertiary)
                     }
                     Spacer()
                 }
-                SecureField(L("sk-ant-… (не нужен, если есть Claude Code)"), text: $apiKeyField)
+                SecureField(L("sk-ant-… (not needed with Claude Code)"), text: $apiKeyField)
                     .onSubmit(saveKey)
                 HStack {
-                    Button(L("Сохранить"), action: saveKey)
+                    Button(L("Save"), action: saveKey)
                         .disabled(apiKeyField.trimmingCharacters(in: .whitespaces).isEmpty)
                     if apiKeySaved {
-                        Label(L("Ключ сохранён"), systemImage: "checkmark.circle")
+                        Label(L("Key saved"), systemImage: "checkmark.circle")
                             .font(.system(size: 11))
                             .foregroundStyle(.secondary)
                     }
@@ -90,45 +90,45 @@ struct SettingsView: View {
                         .font(.system(size: 11))
                         .foregroundStyle(.red)
                 }
-                Text(LF("Ключ хранится в %@ с правами 0600. Без ключа подсказки идут через Claude Code от вашей подписки; ключ, если задан, имеет приоритет.", Settings.shared.apiKeyPath))
+                Text(LF("The key is stored at %@ with 0600 permissions. Without a key, hints run through Claude Code on your subscription; a key, when set, takes priority.", Settings.shared.apiKeyPath))
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
             }
 
-            Section(L("Горячая клавиша")) {
+            Section(L("Hotkey")) {
                 HStack {
-                    Text(keyCapture.isCapturing ? L("Нажмите клавишу…") : hotkeyName)
+                    Text(keyCapture.isCapturing ? L("Press a key…") : hotkeyName)
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(keyCapture.isCapturing ? Brand.accent : .primary)
                     Spacer()
-                    Button(keyCapture.isCapturing ? L("Отмена") : L("Изменить")) {
+                    Button(keyCapture.isCapturing ? L("Cancel") : L("Change")) {
                         if keyCapture.isCapturing { keyCapture.stop() } else { keyCapture.start() }
                     }
                 }
-                Text(L("Нажатие — новая задача. Ещё раз — следующий уровень подсказки. Esc — закрыть."))
+                Text(L("Press — new problem. Press again — next hint level. Esc — close."))
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
                 if KeyNames.typesCharacters(Settings.shared.hotkeyKeyCode) {
                     // A listen-only tap cannot swallow the keystroke, so a plain
                     // key both triggers us and types its character into whatever
                     // has focus.
-                    Text(L("⚠️ Эта клавиша печатает символ в активное окно. Лучше выбрать модификатор или F-клавишу."))
+                    Text(L("⚠️ This key types a character into the active window. Prefer a modifier or an F-key."))
                         .font(.system(size: 10))
                         .foregroundStyle(Brand.accentWarm)
                 }
             }
 
-            Section(L("Решение")) {
-                Picker(L("Язык кода"), selection: $language) {
+            Section(L("Solution")) {
+                Picker(L("Code language"), selection: $language) {
                     ForEach(languages, id: \.self) { lang in
-                        Text(lang.isEmpty ? L("Определять по экрану") : lang).tag(lang)
+                        Text(lang.isEmpty ? L("Detect from screen") : lang).tag(lang)
                     }
                 }
                 .onChange(of: language) { _, new in
                     Settings.shared.solutionLanguage = new.isEmpty ? nil : new
                 }
 
-                Picker(L("Уровень разбора"), selection: $seniority) {
+                Picker(L("Solution register"), selection: $seniority) {
                     ForEach(Seniority.allCases, id: \.self) { s in
                         Text(s.title).tag(s)
                     }
@@ -136,31 +136,31 @@ struct SettingsView: View {
                 .onChange(of: seniority) { _, new in
                     Settings.shared.seniority = new
                 }
-                Text(L("Каким по грейду должен быть код решения: джуну — просто и читаемо, синьору — с инвариантами и трейд-оффами."))
+                Text(L("What grade the solution code targets: junior — simple and readable, senior — invariants and trade-offs."))
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
 
-                Toggle(L("Только код, без пояснений"), isOn: $codeOnly)
+                Toggle(L("Code only, no explanations"), isOn: $codeOnly)
                     .onChange(of: codeOnly) { _, new in
                         Settings.shared.codeOnly = new
                     }
-                Text(L("Решение приходит одним блоком кода — быстрее и сразу вставляется. Комментарии внутри кода остаются."))
+                Text(L("The solution arrives as one code block — faster and paste-ready. In-code comments stay."))
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
 
-                Toggle(L("Сразу показывать решение"), isOn: $straightToSolution)
+                Toggle(L("Show the solution right away"), isOn: $straightToSolution)
                     .onChange(of: straightToSolution) { _, new in
                         Settings.shared.straightToSolution = new
                     }
-                Text(L("Режим для сравнения грейдов: каждое нажатие — новый снимок и сразу уровень 3, без лестницы подсказок. Для тренировки выключите."))
+                Text(L("A register-comparison mode: every press is a fresh capture straight to level 3, no hint ladder. Turn off for actual practice."))
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
 
-                Toggle(L("Хранить историю разборов"), isOn: $historyEnabled)
+                Toggle(L("Keep history"), isOn: $historyEnabled)
                     .onChange(of: historyEnabled) { _, new in
                         Settings.shared.historyEnabled = new
                     }
-                Text(LF("Задачи и ответы лежат в %@. В логи они не пишутся никогда.", History.shared.storageURL.path))
+                Text(LF("Problems and answers live in %@. They are never written to logs.", History.shared.storageURL.path))
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
             }
@@ -196,7 +196,7 @@ struct SettingsView: View {
                 Text(detail).font(.system(size: 10)).foregroundStyle(.tertiary)
             }
             Spacer()
-            if !granted { Button(L("Открыть"), action: action) }
+            if !granted { Button(L("Open"), action: action) }
         }
     }
 

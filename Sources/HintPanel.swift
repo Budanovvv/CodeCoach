@@ -141,7 +141,7 @@ final class HintPanel {
             // Stream ended without a single visible token: report it rather than
             // leaving a spinner running forever.
             if model.phase == .thinking {
-                showError(L("Пустой ответ — попробуйте снять экран ещё раз"))
+                showError(L("Empty answer — try capturing again"))
             }
             return
         }
@@ -492,30 +492,30 @@ private struct HintView: View {
             }
             Spacer(minLength: 8)
             if isError {
-                Button(L("Повторить"), action: onRetry)
+                Button(L("Retry"), action: onRetry)
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                     .fixedSize()
             }
             if model.phase == .done {
                 levelChevrons
-                headerButton("camera.on.rectangle", help: L("Переснять экран этим же уровнем"),
+                headerButton("camera.on.rectangle", help: L("Recapture at the same level"),
                              action: onRecapture)
-                headerButton("clock.arrow.circlepath", help: L("Открыть историю разборов"),
+                headerButton("clock.arrow.circlepath", help: L("Open history"),
                              action: onOpenHistory)
             }
             if showsAnswer {
                 if answerHasCode {
-                    copyButton("curlybraces", help: L("Скопировать только код"),
+                    copyButton("curlybraces", help: L("Copy code only"),
                                flashKey: "code", action: onCopyCode)
                 }
-                copyButton("doc.on.doc", help: L("Скопировать весь ответ"),
+                copyButton("doc.on.doc", help: L("Copy the whole answer"),
                            flashKey: "all", action: onCopyAll)
             }
             levelBadge
             // Mouse-reachable close. Esc still works, but a visible button
             // needs no explaining.
-            headerButton("xmark", help: L("Закрыть (Esc)"), action: onClose)
+            headerButton("xmark", help: L("Close (Esc)"), action: onClose)
         }
         .padding(.horizontal, 14)
         .frame(height: 52)
@@ -528,7 +528,7 @@ private struct HintView: View {
         if model.phase == .capturing || model.phase == .thinking, let started = model.waitStarted {
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 let seconds = max(0, Int(context.date.timeIntervalSince(started)))
-                Text(seconds > 2 ? "\(subtitle) · \(seconds) \(L("с"))" : subtitle)
+                Text(seconds > 2 ? "\(subtitle) · \(seconds) \(L("s"))" : subtitle)
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
@@ -549,8 +549,8 @@ private struct HintView: View {
     private var levelChevrons: some View {
         if model.cachedNeighbor(-1) != nil || model.cachedNeighbor(+1) != nil {
             HStack(spacing: 2) {
-                chevron("chevron.left", delta: -1, help: L("Предыдущий уровень"))
-                chevron("chevron.right", delta: +1, help: L("Следующий из уже полученных"))
+                chevron("chevron.left", delta: -1, help: L("Previous level"))
+                chevron("chevron.right", delta: +1, help: L("Next of the already fetched"))
             }
         }
     }
@@ -649,8 +649,8 @@ private struct HintView: View {
 
     private var title: String {
         switch model.phase {
-        case .capturing: return L("Снимаю экран…")
-        case .thinking: return L("Читаю задачу…")
+        case .capturing: return L("Capturing the screen…")
+        case .thinking: return L("Reading the problem…")
         case .answering, .done: return model.level.title
         case .failed(let message): return message
         }
@@ -663,16 +663,16 @@ private struct HintView: View {
         case .capturing:
             return ""
         case .thinking:
-            return model.thinkingLine.isEmpty ? L("модель думает") : model.thinkingLine
+            return model.thinkingLine.isEmpty ? L("the model is thinking") : model.thinkingLine
         case .answering:
-            return L("Esc — закрыть")
+            return L("Esc — close")
         case .done:
             if model.cachedNeighbor(-1) != nil || model.cachedNeighbor(+1) != nil {
-                return L("‹ › — уровни · хоткей — дальше · Esc — закрыть")
+                return L("‹ › — levels · hotkey — next · Esc — close")
             }
             return model.atLastLevel
-                ? L("Хоткей — новая задача · Esc — закрыть")
-                : L("Ещё раз хоткей — следующий уровень · Esc — закрыть")
+                ? L("Hotkey — new problem · Esc — close")
+                : L("Hotkey again — next level · Esc — close")
         case .failed:
             return ""
         }

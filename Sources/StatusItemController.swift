@@ -42,7 +42,7 @@ final class StatusItemController {
 
         let hotkey = Settings.shared.hotkeyName
         let capture = NSMenuItem(
-            title: L("Разобрать задачу") + " (\(hotkey))",
+            title: L("Solve the problem") + " (\(hotkey))",
             action: #selector(capture), keyEquivalent: "")
         capture.target = self
         menu.addItem(capture)
@@ -54,14 +54,14 @@ final class StatusItemController {
             menu.addItem(.separator())
             if Permissions.accessibility != .granted {
                 let warn = NSMenuItem(
-                    title: L("⚠️ Нет доступа к Универсальному доступу"),
+                    title: L("⚠️ Accessibility permission missing"),
                     action: #selector(openAccessibility), keyEquivalent: "")
                 warn.target = self
                 menu.addItem(warn)
             }
             if Permissions.screenRecording != .granted {
                 let warn = NSMenuItem(
-                    title: L("⚠️ Нет доступа к записи экрана"),
+                    title: L("⚠️ Screen Recording permission missing"),
                     action: #selector(openScreenRecording), keyEquivalent: "")
                 warn.target = self
                 menu.addItem(warn)
@@ -71,33 +71,33 @@ final class StatusItemController {
         menu.addItem(.separator())
 
         let trainer = NSMenuItem(
-            title: L("Тренировка Python…"), action: #selector(showTrainer), keyEquivalent: "t")
+            title: L("Python Training…"), action: #selector(showTrainer), keyEquivalent: "t")
         trainer.target = self
         menu.addItem(trainer)
 
         let history = NSMenuItem(
-            title: L("История разборов…"), action: #selector(showHistory), keyEquivalent: "")
+            title: L("History…"), action: #selector(showHistory), keyEquivalent: "")
         history.target = self
         menu.addItem(history)
 
         let settings = NSMenuItem(
-            title: L("Настройки…"), action: #selector(showSettings), keyEquivalent: ",")
+            title: L("Settings…"), action: #selector(showSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
 
         let updates = NSMenuItem(
-            title: L("Проверить обновления…"), action: #selector(checkForUpdates), keyEquivalent: "")
+            title: L("Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "")
         updates.target = self
         menu.addItem(updates)
 
         let about = NSMenuItem(
-            title: L("О CodeCoach"), action: #selector(showAbout), keyEquivalent: "")
+            title: L("About CodeCoach"), action: #selector(showAbout), keyEquivalent: "")
         about.target = self
         menu.addItem(about)
 
         menu.addItem(.separator())
         let quit = NSMenuItem(
-            title: L("Выйти из CodeCoach"), action: #selector(NSApplication.terminate(_:)),
+            title: L("Quit CodeCoach"), action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q")
         menu.addItem(quit)
 
@@ -113,7 +113,7 @@ final class StatusItemController {
     @objc private func showAbout() {
         NSApp.activate(ignoringOtherApps: true)
         let credits = NSMutableAttributedString(
-            string: L("Тренажёр по задачам для технических собеседований") + "\n",
+            string: L("A trainer for technical-interview problems") + "\n",
             attributes: [.font: NSFont.systemFont(ofSize: 11)])
         credits.append(NSAttributedString(
             string: "Free & open source · GPL-3.0\n",
