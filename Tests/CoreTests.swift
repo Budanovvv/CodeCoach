@@ -179,6 +179,99 @@ final class AnswerFormatTests: XCTestCase {
     }
 }
 
+final class TrainerTests: XCTestCase {
+
+    func testVerdictParsing() {
+        XCTAssertEqual(Trainer.parseVerdict(from: "Молодец!\nИТОГ: решено"), .solved)
+        XCTAssertEqual(Trainer.parseVerdict(from: "Есть ошибка.\n ИТОГ: частично "), .partial)
+        XCTAssertEqual(Trainer.parseVerdict(from: "ИТОГ: не решено"), .failed)
+        // The word appearing mid-explanation must not confuse the parser —
+        // only the last ИТОГ line counts.
+        XCTAssertEqual(
+            Trainer.parseVerdict(from: "Прошлый ИТОГ: решено был неверен.\nИТОГ: частично"),
+            .partial)
+        XCTAssertNil(Trainer.parseVerdict(from: "никакого вердикта"))
+    }
+
+    func testMapUpdateRules() {
+        var profile = Trainer.Profile()
+        profile.set(.strings, to: .started)
+
+        // Solved lifts one rung; a partial attempt does not move the level.
+        let up = Trainer.updated(profile, topic: .strings, verdict: .solved, gaveUp: false)
+        XCTAssertEqual(up.level(of: .strings), .confident)
+        let same = Trainer.updated(profile, topic: .strings, verdict: .partial, gaveUp: false)
+        XCTAssertEqual(same.level(of: .strings), .started)
+
+        // Giving up drops one rung and wins over any verdict; both directions clamp.
+        let down = Trainer.updated(profile, topic: .strings, verdict: .solved, gaveUp: true)
+        XCTAssertEqual(down.level(of: .strings), .notStarted)
+        let floor = Trainer.updated(down, topic: .strings, verdict: .failed, gaveUp: true)
+        XCTAssertEqual(floor.level(of: .strings), .notStarted)
+        var top = Trainer.Profile()
+        top.set(.strings, to: .mastered)
+        XCTAssertEqual(
+            Trainer.updated(top, topic: .strings, verdict: .solved, gaveUp: false)
+                .level(of: .strings), .mastered)
+    }
+
+    func testNextTopicPicksTheWeakest() {
+        var profile = Trainer.Profile()
+        for topic in Trainer.Topic.allCases { profile.set(topic, to: .confident) }
+        profile.set(.dictsAndSets, to: .notStarted)
+        XCTAssertEqual(Trainer.nextTopic(for: profile), .dictsAndSets)
+
+        // Everything mastered: keep training the last topic rather than crash.
+        for topic in Trainer.Topic.allCases { profile.set(topic, to: .mastered) }
+        XCTAssertEqual(Trainer.nextTopic(for: profile), .oop)
+    }
+
+    func testProbeCoversDistinctCoreTopics() {
+        XCTAssertEqual(Trainer.probeTopics.count, 5)
+        XCTAssertEqual(Set(Trainer.probeTopics).count, 5)
+    }
+
+    func testTrainerPromptsKeepTheLadderDiscipline() {
+        // Review must demand a machine-readable verdict and refuse to hand the
+        // solution over; the hint must forbid code. Same product rule as the
+        // interview ladder, and more load-bearing for a learner.
+        let review = TrainerPrompts.review(taskText: "задача")
+        XCTAssertTrue(review.contains("ИТОГ:"))
+        XCTAssertTrue(review.contains("ЗАПРЕЩЕНО"))
+
+        let hint = TrainerPrompts.hint(taskText: "задача")
+        XCTAssertTrue(hint.contains("ЗАПРЕЩЕНО"))
+
+        // Task generation must not leak a solution either.
+        let task = TrainerPrompts.generateTask(topic: .strings, level: .started, avoidTitles: [])
+        XCTAssertTrue(task.contains("БЕЗ решения"))
+        XCTAssertTrue(task.contains("НАЗВАНИЕ:"))
+
+        // Nothing volatile in the system prompt (it is the cacheable prefix).
+        XCTAssertEqual(TrainerPrompts.system, TrainerPrompts.system)
+    }
+
+    func testProfileSurvivesRoundTrip() {
+        var profile = Trainer.Profile()
+        profile.probeDone = true
+        profile.set(.loopsTopicForTest, to: .confident)
+        profile.solved.append(Trainer.SolvedTask(
+            topic: .strings, title: "Шифр", date: Date(timeIntervalSince1970: 1_754_000_000),
+            verdict: "решено"))
+
+        let data = try! History.makeEncoder().encode(profile)
+        let decoded = try! History.makeDecoder().decode(Trainer.Profile.self, from: data)
+        XCTAssertEqual(decoded.probeDone, true)
+        XCTAssertEqual(decoded.level(of: .loopsTopicForTest), .confident)
+        XCTAssertEqual(decoded.solved.first?.title, "Шифр")
+    }
+}
+
+private extension Trainer.Topic {
+    /// Alias so the test reads naturally without repeating the raw case name.
+    static let loopsTopicForTest = Trainer.Topic.conditionsAndLoops
+}
+
 final class HistoryCodecTests: XCTestCase {
 
     func testEntriesSurviveAnEncodeDecodeRoundTrip() {

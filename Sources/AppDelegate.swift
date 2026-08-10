@@ -10,6 +10,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let hotkey = HotkeyMonitor()
     private var settingsWindow: NSWindow?
     private var historyWindow: NSWindow?
+    private var trainerWindow: NSWindow?
+    /// Created lazily on the first open: the trainer loads its profile from
+    /// disk, and most launches never touch the trainer at all.
+    private var trainerController: TrainerController?
     private var tapHealthTimer: Timer?
     /// Sparkle. Checks run on the schedule from Info.plist; the menu item
     /// triggers a manual check. Updates install silently and apply on the
@@ -27,6 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.updater.checkForUpdates(nil)
         }
         statusItem.onHistory = { [weak self] in self?.showHistory() }
+        statusItem.onTrainer = { [weak self] in self?.showTrainer() }
 
         controller.onOpenHistory = { [weak self] in self?.showHistory() }
         controller.onStateChange = { [weak self] busy in
@@ -115,6 +120,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         present(window)
     }
 
+    private func showTrainer() {
+        if let trainerWindow {
+            present(trainerWindow)
+            return
+        }
+        let controller = trainerController ?? TrainerController()
+        trainerController = controller
+        let window = makeWindow(
+            title: "Тренировка Python", content: AnyView(TrainerView(controller: controller)))
+        trainerWindow = window
+        present(window)
+    }
+
     private func makeWindow(title: String, content: AnyView) -> NSWindow {
         let hosting = NSHostingController(rootView: content)
         let window = NSWindow(contentViewController: hosting)
@@ -142,6 +160,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let window = note.object as? NSWindow else { return }
         if window === settingsWindow { settingsWindow = nil }
         if window === historyWindow { historyWindow = nil }
+        // The trainer CONTROLLER survives the window: closing mid-session must
+        // not lose the current task or the probe position.
+        if window === trainerWindow { trainerWindow = nil }
         statusItem.rebuildMenu()
 
         // Back to accessory once none of our windows are left, so the Dock icon
@@ -149,7 +170,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // notification time.
         DispatchQueue.main.async {
             let hasWindows = NSApp.windows.contains {
-                $0.isVisible && ($0 === self.settingsWindow || $0 === self.historyWindow)
+                $0.isVisible && ($0 === self.settingsWindow || $0 === self.historyWindow
+                                 || $0 === self.trainerWindow)
             }
             if !hasWindows { NSApp.setActivationPolicy(.accessory) }
         }

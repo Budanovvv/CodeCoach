@@ -61,6 +61,8 @@ targets:
       - path: Sources/AnswerFormat.swift
       - path: Sources/History.swift
       - path: Sources/CLIErrorClassifier.swift
+      - path: Sources/Trainer.swift
+      - path: Sources/TrainerPrompts.swift
       - path: Sources/Settings.swift
       - path: Sources/Log.swift
     settings:

@@ -10,6 +10,7 @@ final class StatusItemController {
     var onHistory: (() -> Void)?
     var onCapture: (() -> Void)?
     var onCheckUpdates: (() -> Void)?
+    var onTrainer: (() -> Void)?
 
     init() {
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -64,6 +65,11 @@ final class StatusItemController {
 
         menu.addItem(.separator())
 
+        let trainer = NSMenuItem(
+            title: "Тренировка Python…", action: #selector(showTrainer), keyEquivalent: "t")
+        trainer.target = self
+        menu.addItem(trainer)
+
         let history = NSMenuItem(
             title: "История разборов…", action: #selector(showHistory), keyEquivalent: "")
         history.target = self
@@ -97,6 +103,7 @@ final class StatusItemController {
     @objc private func showSettings() { onSettings?() }
     @objc private func showHistory() { onHistory?() }
     @objc private func checkForUpdates() { onCheckUpdates?() }
+    @objc private func showTrainer() { onTrainer?() }
 
     @objc private func showAbout() {
         NSApp.activate(ignoringOtherApps: true)

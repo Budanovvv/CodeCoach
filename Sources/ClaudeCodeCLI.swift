@@ -34,30 +34,45 @@ enum ClaudeCodeCLI {
         language: String?,
         onEvent: @escaping (ClaudeClient.Event) -> Void
     ) async throws {
-        guard let bin = binary else { throw ClaudeClient.ClientError.noCredentials }
-
         let prompt = "Условие задачи — на приложенном скриншоте. Отвечай сразу по делу; "
             + "не используй инструменты и не комментируй чтение изображения.\n\n"
             + Prompts.instruction(
                 for: level, language: language, seniority: Settings.shared.seniority,
                 codeOnly: Settings.shared.codeOnly)
+        try await run(
+            system: Prompts.system, userText: prompt, imagePNG: screenshotPNG,
+            model: level.cliModel, label: "level \(level.rawValue)", onEvent: onEvent)
+    }
+
+    /// Generic single-turn call: one user message (text, optionally with an
+    /// image), one streamed answer. The interview ladder and the trainer both
+    /// sit on top of this — they differ only in system prompt and content.
+    static func run(
+        system: String,
+        userText: String,
+        imagePNG: Data?,
+        model: String,
+        label: String,
+        onEvent: @escaping (ClaudeClient.Event) -> Void
+    ) async throws {
+        guard let bin = binary else { throw ClaudeClient.ClientError.noCredentials }
+
+        var content: [[String: Any]] = []
+        if let imagePNG {
+            content.append([
+                "type": "image",
+                "source": [
+                    "type": "base64",
+                    "media_type": "image/png",
+                    "data": imagePNG.base64EncodedString(),
+                ],
+            ])
+        }
+        content.append(["type": "text", "text": userText])
 
         let message: [String: Any] = [
             "type": "user",
-            "message": [
-                "role": "user",
-                "content": [
-                    [
-                        "type": "image",
-                        "source": [
-                            "type": "base64",
-                            "media_type": "image/png",
-                            "data": screenshotPNG.base64EncodedString(),
-                        ],
-                    ],
-                    ["type": "text", "text": prompt],
-                ],
-            ],
+            "message": ["role": "user", "content": content],
         ]
         var input = try JSONSerialization.data(withJSONObject: message)
         input.append(0x0A)
@@ -71,11 +86,11 @@ enum ClaudeCodeCLI {
             "--output-format", "stream-json",
             "--include-partial-messages",
             "--verbose",
-            "--model", level.cliModel,
+            "--model", model,
             // No tools are needed (the image is inline); 2 turns so that even a
             // stray denied tool call still leaves room for an answer turn.
             "--max-turns", "2",
-            "--system-prompt", Prompts.system,
+            "--system-prompt", system,
         ]
         // The subscription must be the auth source even if a key is exported
         // somewhere in the user's shell profile.
@@ -90,7 +105,7 @@ enum ClaudeCodeCLI {
         process.standardOutput = stdout
         process.standardError = stderrPipe
 
-        Log.d("cli: level \(level.rawValue) start model=\(level.cliModel) image=\(screenshotPNG.count / 1024)KB")
+        Log.d("cli: \(label) start model=\(model) image=\((imagePNG?.count ?? 0) / 1024)KB")
         try process.run()
 
         // Fed off this task so a full stdin pipe can never deadlock against
@@ -177,7 +192,7 @@ enum ClaudeCodeCLI {
                     CLIErrorClassifier.message(
                         exitCode: exitCode, stderr: stderrText, subtype: failedSubtype))
             }
-            Log.d("cli: level \(level.rawValue) done")
+            Log.d("cli: \(label) done")
         } onCancel: {
             // Ends the stream (the pipe closes), which unwinds the read loop.
             process.terminate()
