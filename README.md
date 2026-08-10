@@ -1,84 +1,97 @@
 # CodeCoach
 
-**Тренажёр по алгоритмическим задачам для подготовки к техническим собеседованиям.**
+**A trainer for algorithmic problems, for technical-interview preparation.**
 
-Нажал клавишу — снялся экран с условием задачи. Под строкой меню развернулась
-подсказка. Нажал ещё раз — подсказка стала глубже.
+Press a key — the screen with the problem statement is captured. A hint
+unfolds under the menu bar. Press again — the hint goes one level deeper.
 
-Три уровня, и в этом весь смысл:
+Three levels, and they are the whole point:
 
-| Уровень | Что даёт | Что осознанно не даёт |
+| Level | What it gives | What it deliberately withholds |
 | --- | --- | --- |
-| **Намёк** | как понята задача, наводящее наблюдение, какая структура данных | алгоритм, сложность, код |
-| **Подход** | алгоритм по шагам, сложность, краевые случаи | код |
-| **Решение** | рабочий код и на что будет давить интервьюер | — |
+| **Nudge** | how the problem was understood, a guiding observation, which data structure fits | the algorithm, complexity, code |
+| **Approach** | the algorithm step by step, complexity, edge cases | code |
+| **Solution** | working code and what the interviewer will probe | — |
 
-Лестница существует, чтобы вы решали сами. Первый уровень не даст переписать
-ответ, даже если очень хочется — а на третий приходится сознательно нажать
-дважды. Это инструмент подготовки **до** собеседования, а не во время него.
+The ladder exists so that you solve it yourself. The first level will not let
+you transcribe an answer even if you badly want to — and the third takes two
+deliberate presses to reach. This is a tool for preparing **before** an
+interview, not during one.
 
-## Требования
+There is also a separate **Python training mode** for a learner: the app
+generates tasks against a per-topic knowledge map, the learner types code
+right in the window, and a mentor reviews the attempt without leaking the
+solution.
+
+## Requirements
 
 - macOS 15+
-- [Xcodegen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen`
-- Доступ к Claude: подписка (через установленный [Claude Code](https://claude.com/claude-code)) или ключ API
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen`
+- Claude access: a subscription (via an installed [Claude Code](https://claude.com/claude-code)) or an API key
 
-## Сборка
+## Building
 
 ```bash
 ./build.sh              # Release
-./build.sh --install    # Release + установка в /Applications
-./build.sh --debug      # быстрый Debug-билд
-./test.sh               # юнит-тесты
+./build.sh --install    # Release + install into /Applications
+./build.sh --debug      # fast Debug build
+./test.sh               # unit tests
+./release.sh            # signed, notarized DMGs + Sparkle appcast
 ```
 
-Проект Xcode генерируется из `project.yml` — сам `.xcodeproj` в репозиторий не
-коммитится.
+The Xcode project is generated from `project.yml` — the `.xcodeproj` itself
+is not committed.
 
-## Первый запуск
+## First run
 
-1. Дайте приложению доступ к Claude — любым из двух способов:
-   - **Подписка Claude** (Pro/Max): достаточно установленного и залогиненного
-     [Claude Code](https://claude.com/claude-code). CodeCoach гоняет запросы
-     через его headless-режим (`claude -p`) — ключ не нужен, оплата идёт
-     подпиской. Подписка не даёт прямого доступа к Messages API, поэтому
-     путь именно такой.
-   - **Ключ API**: вставьте его в настройках. Он ляжет в
-     `~/.config/codecoach/api-key` с правами `0600`. Если задан ключ, он
-     имеет приоритет над подпиской.
-2. Выдайте два разрешения macOS:
-   - **Универсальный доступ** — чтобы слышать горячую клавишу;
-   - **Запись экрана** — чтобы снимать условие задачи.
+1. Give the app Claude access — either way works:
+   - **Claude subscription** (Pro/Max): an installed and logged-in
+     [Claude Code](https://claude.com/claude-code) is enough. CodeCoach runs
+     requests through its headless mode (`claude -p`) — no key needed, usage
+     is billed to the subscription. A subscription does not grant direct
+     Messages-API access, which is why the path goes through Claude Code.
+   - **API key**: paste it in Settings. It is stored at
+     `~/.config/codecoach/api-key` with `0600` permissions. A key, when set,
+     takes priority over the subscription.
+2. Grant two macOS permissions:
+   - **Accessibility** — to hear the hotkey;
+   - **Screen Recording** — to capture the problem statement.
 
-Приложение живёт в меню-баре и не занимает место в Dock.
+The app lives in the menu bar and takes no Dock space.
 
-## Управление
+## Controls
 
-| Действие | Что происходит |
+| Action | What happens |
 | --- | --- |
-| Правый ⌘ | новая задача: снимок экрана и первый уровень подсказки |
-| Правый ⌘ ещё раз | следующий уровень для той же задачи |
-| `Esc` | закрыть панель и завершить разбор |
+| Right ⌘ | new problem: a screen capture and the first hint level |
+| Right ⌘ again | the next level for the same problem |
+| `Esc` | close the panel and end the session |
 
-Клавиша меняется в настройках живым нажатием. Правый ⌘ выбран по умолчанию
-потому, что его почти никто не использует, и потому что правый ⌥ занят
+The key is changed in Settings by pressing the new one. Right ⌘ is the
+default because almost nobody uses it, and because right ⌥ is taken by
 [Dictate](https://github.com/Budanovvv/Dictate).
 
-## Приватность
+## Languages
 
-Скриншоты и разборы хранятся только на вашем компьютере, в
-`~/Library/Application Support/CodeCoach`. В логи не попадают никогда — там
-только переходы состояний и формы ошибок. Историю можно выключить в настройках.
+The UI and the model's answers follow one setting: English, Russian or
+Ukrainian (or the system language). English is the base.
 
-Разбор задачи требует обращения к Claude API: скриншот уходит в Anthropic.
-Это единственное, что покидает компьютер.
+## Privacy
 
-## Лицензия
+Screenshots and solved problems are stored only on your Mac, in
+`~/Library/Application Support/CodeCoach`. They are never written to logs —
+logs carry only state transitions and error shapes. History can be switched
+off in Settings.
 
-[GPL-3.0](LICENSE) — как и у [Dictate](https://github.com/Budanovvv/Dictate).
+Solving a problem requires a Claude request: the screenshot goes to
+Anthropic. That is the only thing that leaves the computer.
 
-## Стек
+## License
 
-Swift, SwiftUI и AppKit. Глобальный хоткей — `CGEventTap`, снимок экрана —
-ScreenCaptureKit, разбор — Claude API (`claude-fable-5`) со стримингом ответа
-прямо в панель.
+[GPL-3.0](LICENSE) — same as [Dictate](https://github.com/Budanovvv/Dictate).
+
+## Stack
+
+Swift, SwiftUI and AppKit. The global hotkey is a `CGEventTap`, the capture
+is ScreenCaptureKit, the analysis is Claude with the answer streamed straight
+into the panel. Updates ship through Sparkle.
