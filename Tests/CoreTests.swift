@@ -235,9 +235,10 @@ final class TrainerTests: XCTestCase {
         // Review must demand a machine-readable verdict and refuse to hand the
         // solution over; the hint must forbid code. Same product rule as the
         // interview ladder, and more load-bearing for a learner.
-        let review = TrainerPrompts.review(taskText: "задача")
+        let review = TrainerPrompts.review(taskText: "задача", code: "print(1)")
         XCTAssertTrue(review.contains("ИТОГ:"))
         XCTAssertTrue(review.contains("ЗАПРЕЩЕНО"))
+        XCTAssertTrue(review.contains("print(1)"))
 
         let hint = TrainerPrompts.hint(taskText: "задача")
         XCTAssertTrue(hint.contains("ЗАПРЕЩЕНО"))

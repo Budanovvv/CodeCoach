@@ -11,11 +11,35 @@ struct TrainerView: View {
             topicMap
             Divider()
             content
-            Spacer(minLength: 0)
+            if hasTask {
+                editor
+            } else {
+                Spacer(minLength: 0)
+            }
             buttons
         }
         .padding(16)
-        .frame(minWidth: 560, idealWidth: 640, minHeight: 480, idealHeight: 640)
+        .frame(minWidth: 560, idealWidth: 660, minHeight: 540, idealHeight: 720)
+    }
+
+    private var hasTask: Bool {
+        switch controller.phase {
+        case .working, .responding: return !controller.taskText.isEmpty
+        default: return false
+        }
+    }
+
+    private var editor: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Твой код")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+            CodeEditor(text: $controller.codeInput)
+                .frame(minHeight: 140, idealHeight: 200)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(.quaternary, lineWidth: 1))
+        }
     }
 
     // MARK: - Knowledge map
@@ -74,7 +98,7 @@ struct TrainerView: View {
                 switch controller.phase {
                 case .idle:
                     Text(controller.probeIndex != nil
-                         ? "Пять коротких задач, чтобы понять, что ты уже знаешь. Решай в PyCharm; когда готов — жми «Проверить»."
+                         ? "Пять коротких задач, чтобы понять, что ты уже знаешь. Пиши код прямо здесь, в поле ниже; когда готов — жми «Проверить»."
                          : "Нажми «Дальше» — получишь задачу под свой уровень.")
                         .font(.system(size: 13))
                         .foregroundStyle(.secondary)
@@ -145,8 +169,9 @@ struct TrainerView: View {
                 .keyboardShortcut(.defaultAction)
             } else {
                 Button("Проверить") { controller.review() }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(controller.isBusy || controller.taskText.isEmpty)
+                    .disabled(controller.isBusy || controller.taskText.isEmpty
+                              || controller.codeInput.trimmingCharacters(
+                                  in: .whitespacesAndNewlines).isEmpty)
                 Button("Намёк") { controller.hint() }
                     .disabled(controller.isBusy || controller.taskText.isEmpty)
                 Button("Сдаюсь") { controller.giveUp() }

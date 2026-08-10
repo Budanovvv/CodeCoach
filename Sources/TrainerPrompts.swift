@@ -59,16 +59,22 @@ enum TrainerPrompts {
         """
     }
 
-    /// Level-0 review: the learner's code is on the screenshot. Feedback yes,
-    /// solution no. The trailing "ИТОГ:" line is machine-read — see
-    /// Trainer.parseVerdict.
-    static func review(taskText: String) -> String {
+    /// Level-0 review of the code the learner typed in the trainer window.
+    /// Feedback yes, solution no. The trailing "ИТОГ:" line is machine-read —
+    /// see Trainer.parseVerdict.
+    static func review(taskText: String, code: String) -> String {
         """
         ПРОВЕРКА РЕШЕНИЯ. Задача, которую решает ученик:
 
         \(taskText)
 
-        На скриншоте — его код (может быть недописан). Разбери именно ЕГО попытку:
+        Его код (может быть недописан):
+
+        ```python
+        \(code)
+        ```
+
+        Разбери именно ЕГО попытку:
         1. Что уже сделано правильно — назови, это важно.
         2. Если есть ошибка — покажи, НА КАКОМ примере она проявится, но не говори, \
         как её чинить. Пусть увидит сам.

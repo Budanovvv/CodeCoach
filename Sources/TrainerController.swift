@@ -18,6 +18,8 @@ final class TrainerController: ObservableObject {
     @Published var phase: Phase = .idle
     @Published var taskText = ""
     @Published var responseText = ""
+    /// The learner's code, typed right in the trainer window.
+    @Published var codeInput = ""
     @Published var profile: Trainer.Profile
     @Published var currentTopic: Trainer.Topic?
     /// Probe position: nil when past the probe, else index into probeTopics.
@@ -71,6 +73,7 @@ final class TrainerController: ObservableObject {
         gaveUp = false
         taskText = ""
         responseText = ""
+        codeInput = ""
         phase = .generating
         Log.d("trainer: generating topic=\(topic.rawValue) probe=\(probeIndex.map(String.init) ?? "-")")
 
@@ -82,25 +85,20 @@ final class TrainerController: ObservableObject {
             doneState: .working)
     }
 
-    /// "Проверить": screenshot of the learner's editor, level-0 review.
+    /// "Проверить": level-0 review of the code typed in the window. No
+    /// screenshot — the trainer is a single surface, and the exact text beats
+    /// a picture of it anyway.
     func review() {
         guard case .working = phaseOrResponding(), !taskText.isEmpty else { return }
+        let code = codeInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !code.isEmpty else { return }
         responseText = ""
         phase = .responding
-        task = Task { [weak self] in
+        streamResponse(TrainerPrompts.review(taskText: taskText, code: code),
+                       imagePNG: nil) { [weak self] answer in
             guard let self else { return }
-            do {
-                let shot = try await ScreenCapture.captureDisplayUnderCursor()
-                guard !Task.isCancelled else { return }
-                self.streamResponse(TrainerPrompts.review(taskText: self.taskText),
-                                    imagePNG: shot.png) { [weak self] answer in
-                    guard let self else { return }
-                    self.lastVerdict = Trainer.parseVerdict(from: answer)
-                    Log.d("trainer: review verdict=\(self.lastVerdict?.rawValue ?? "?")")
-                }
-            } catch {
-                self.fail(error)
-            }
+            self.lastVerdict = Trainer.parseVerdict(from: answer)
+            Log.d("trainer: review verdict=\(self.lastVerdict?.rawValue ?? "?")")
         }
     }
 
