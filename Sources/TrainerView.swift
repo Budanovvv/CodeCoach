@@ -83,7 +83,7 @@ struct TrainerView: View {
             Text(L("Your code"))
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)
-            CodeEditor(text: $controller.codeInput)
+            CodeEditor(text: $controller.codeInput, context: controller.taskText)
                 .frame(minHeight: 140, idealHeight: 200)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .overlay(RoundedRectangle(cornerRadius: 8)

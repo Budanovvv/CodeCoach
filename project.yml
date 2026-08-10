@@ -62,6 +62,7 @@ targets:
       - path: Sources/History.swift
       - path: Sources/CLIErrorClassifier.swift
       - path: Sources/Localization.swift
+      - path: Sources/CodeAssist.swift
       - path: Sources/Trainer.swift
       - path: Sources/TrainerPrompts.swift
       - path: Sources/Settings.swift

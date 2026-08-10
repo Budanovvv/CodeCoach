@@ -373,6 +373,47 @@ private extension Trainer.Topic {
     static let loopsTopicForTest = Trainer.Topic.conditionsAndLoops
 }
 
+final class CodeAssistTests: XCTestCase {
+
+    func testCompletionsMixDictionaryAndDocumentWords() {
+        let doc = "score_total = 0\nfor letter in word:\n    pri"
+        let hits = CodeAssist.completions(for: "pri", document: doc)
+        XCTAssertTrue(hits.contains("print"))
+        // The half-typed word itself must not offer to complete itself.
+        XCTAssertFalse(hits.contains("pri"))
+
+        // Identifiers from the learner's own code and from the task statement
+        // complete too — those are the names they are about to retype.
+        let fromDoc = CodeAssist.completions(for: "sco", document: doc)
+        XCTAssertTrue(fromDoc.contains("score_total"))
+        let fromTask = CodeAssist.completions(
+            for: "pla", document: "", context: "напиши функцию playlist_length")
+        XCTAssertTrue(fromTask.contains("playlist_length"))
+
+        // One character is too little signal to pop a list over.
+        XCTAssertTrue(CodeAssist.completions(for: "p", document: doc).isEmpty)
+    }
+
+    func testIndentationFollowsPythonRules() {
+        XCTAssertEqual(CodeAssist.indentation(afterLine: "def f():"), "    ")
+        XCTAssertEqual(CodeAssist.indentation(afterLine: "    if x > 0:"), "        ")
+        XCTAssertEqual(CodeAssist.indentation(afterLine: "    x = 1"), "    ")
+        XCTAssertEqual(CodeAssist.indentation(afterLine: "x = 1"), "")
+        // A colon hiding in a comment must not indent; a real colon with a
+        // trailing comment must.
+        XCTAssertEqual(CodeAssist.indentation(afterLine: "x = 1  # not a block:"), "")
+        XCTAssertEqual(CodeAssist.indentation(afterLine: "for i in y:  # loop"), "    ")
+    }
+
+    func testAutoCloseOnlyAtBoundaries() {
+        XCTAssertTrue(CodeAssist.shouldAutoClose(opening: "(", nextChar: nil))
+        XCTAssertTrue(CodeAssist.shouldAutoClose(opening: "\"", nextChar: " "))
+        XCTAssertTrue(CodeAssist.shouldAutoClose(opening: "[", nextChar: ")"))
+        // Mid-word auto-closing is how `it's` becomes `it''s`.
+        XCTAssertFalse(CodeAssist.shouldAutoClose(opening: "'", nextChar: "s"))
+    }
+}
+
 final class HistoryCodecTests: XCTestCase {
 
     func testEntriesSurviveAnEncodeDecodeRoundTrip() {
