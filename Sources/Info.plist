@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- A custom Info.plist without CFBundleIdentifier builds and signs silently
+	     but produces a ghost app: TCC cannot bind permissions to it and
+	     Bundle.main.bundleIdentifier is nil, which turns identity comparisons
+	     into traps. Always wire these through from the build settings. -->
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundleDisplayName</key>
+	<string>CodeCoach</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleIconFile</key>
+	<string>CodeCoach</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>15.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>Valentyn Budanov</string>
+	<!-- Sparkle auto-updates; the appcast is published in this repo's GitHub
+	     Releases. While the repository stays private the feed URL is not
+	     publicly downloadable, so updates begin working the day it goes public.
+	     The EdDSA key is the machine-wide Sparkle key shared with Dictate. -->
+	<key>SUFeedURL</key>
+	<string>https://github.com/Budanovvv/CodeCoach/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>UhSe9t1eHl6devlZIFuLPLn6lPibnA6I4yWpDvyrui4=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUAutomaticallyUpdate</key>
+	<true/>
+</dict>
+</plist>

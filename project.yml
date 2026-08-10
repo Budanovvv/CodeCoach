@@ -1,0 +1,86 @@
+name: CodeCoach
+options:
+  bundleIdPrefix: com.valentynbudanov
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.6.0"
+
+targets:
+  CodeCoach:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources
+    dependencies:
+      - package: Sparkle
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.valentynbudanov.CodeCoach
+        PRODUCT_NAME: CodeCoach
+        MARKETING_VERSION: "0.1.0"
+        INFOPLIST_FILE: Sources/Info.plist
+        SWIFT_VERSION: "5.0"
+        MACOSX_DEPLOYMENT_TARGET: "15.0"
+        # Stable code signing identity is what keeps the TCC grants (Accessibility,
+        # Screen Recording) alive across rebuilds. Ad-hoc signing makes every build
+        # look like a new app to tccd, so the permissions reset every time.
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 3BN45AZPR2
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ENTITLEMENTS: Sources/CodeCoach.entitlements
+        # Menu bar utility: no permanent Dock icon. The Dock icon appears only
+        # while one of our windows is open (see AppDelegate).
+        LSUIElement: YES
+      configs:
+        # Release ships outside the App Store, so it must carry the Developer ID
+        # identity and a secure timestamp for notarization. Automatic signing
+        # would pick "Apple Development", which notarization rejects.
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Developer ID Application"
+          OTHER_CODE_SIGN_FLAGS: "--timestamp"
+          # Xcode injects get-task-allow (debugger attach) into every build and
+          # the notary service refuses it.
+          CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+
+  # Unit tests compile the tested sources directly: no TEST_HOST, so the tests
+  # never launch the GUI and never depend on TCC state.
+  CodeCoachTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+      - path: Sources/HintLevel.swift
+      - path: Sources/Prompts.swift
+      - path: Sources/KeyNames.swift
+      - path: Sources/AnswerFormat.swift
+      - path: Sources/History.swift
+      - path: Sources/CLIErrorClassifier.swift
+      - path: Sources/Settings.swift
+      - path: Sources/Log.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.valentynbudanov.CodeCoachTests
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 3BN45AZPR2
+
+schemes:
+  CodeCoach:
+    build:
+      targets:
+        CodeCoach: all
+        CodeCoachTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - CodeCoachTests
+    archive:
+      config: Release

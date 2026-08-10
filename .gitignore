@@ -1,0 +1,16 @@
+# Generated from project.yml by xcodegen — never commit
+CodeCoach.xcodeproj/
+
+# Build output
+build/
+DerivedData/
+
+# Internal notes and handoff docs stay out of any public repo
+internal/
+
+# macOS / editor noise
+.DS_Store
+*.xcuserstate
+xcuserdata/
+.idea/
+release/
