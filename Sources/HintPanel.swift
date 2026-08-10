@@ -727,14 +727,16 @@ private struct CodeBlock: View {
                     .font(.system(size: 9, weight: .medium))
                     .foregroundStyle(.tertiary)
             }
-            // Horizontal scrolling rather than wrapping: wrapped code loses the
-            // indentation that carries its structure.
-            ScrollView(.horizontal, showsIndicators: false) {
-                Text(code)
-                    .font(.system(size: 11.5, design: .monospaced))
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: true, vertical: true)
-            }
+            // Soft wrap to the panel's width. The first cut used a horizontal
+            // scroll to protect indentation, but with hidden indicators it read
+            // as "the code is simply chopped off" (owner, after resizing the
+            // panel). A wrapped continuation line is a familiar editor
+            // behaviour; an invisible scroll is not.
+            Text(code)
+                .font(.system(size: 11.5, design: .monospaced))
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
