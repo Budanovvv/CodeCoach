@@ -29,9 +29,9 @@ struct TrainerView: View {
                         }
                     }
                     Picker(L("How well do you know Python? (optional)"), selection: $onboardingLevel) {
-                        Text(L("Prefer not to say")).tag(Trainer.SelfLevel?.none)
-                        ForEach(Trainer.SelfLevel.allCases, id: \.self) { level in
-                            Text(level.title).tag(Trainer.SelfLevel?.some(level))
+                        Text(L("Prefer not to say")).tag(UserLevel?.none)
+                        ForEach(UserLevel.allCases, id: \.self) { level in
+                            Text(level.title).tag(UserLevel?.some(level))
                         }
                     }
                 } header: {
@@ -56,7 +56,7 @@ struct TrainerView: View {
             HStack {
                 Spacer()
                 Button(L("Start")) {
-                    controller.completeOnboarding(age: onboardingAge, selfLevel: onboardingLevel)
+                    controller.completeOnboarding(age: onboardingAge, level: onboardingLevel)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Brand.accent)
@@ -85,7 +85,7 @@ struct TrainerView: View {
     }
 
     @State private var onboardingAge: Trainer.AgeBand?
-    @State private var onboardingLevel: Trainer.SelfLevel?
+    @State private var onboardingLevel: UserLevel? = Settings.shared.userLevel
 
     private var hasTask: Bool {
         switch controller.phase {

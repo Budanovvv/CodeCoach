@@ -28,8 +28,15 @@ final class TrainerController: ObservableObject {
     /// self-assessment; cleared on the next task.
     @Published var probeNote: String?
 
+    /// The self-assessment now lives in the app-wide profile level; the
+    /// trainer profile's own copy is a fallback for profiles from before the
+    /// unification.
+    var effectiveSelfLevel: Trainer.SelfLevel? {
+        Settings.shared.userLevel?.trainerLevel ?? profile.selfLevel
+    }
+
     /// The probe list sized by the self-assessment.
-    var activeProbeTopics: [Trainer.Topic] { Trainer.probeTopics(for: profile.selfLevel) }
+    var activeProbeTopics: [Trainer.Topic] { Trainer.probeTopics(for: effectiveSelfLevel) }
 
     /// Topic explicitly chosen by clicking its chip; overrides the automatic
     /// weakest-topic pick for the next task, then clears.
@@ -64,12 +71,15 @@ final class TrainerController: ObservableObject {
 
     /// Saves the onboarding answers. Both are optional; the probe corrects
     /// whatever they claim.
-    func completeOnboarding(age: Trainer.AgeBand?, selfLevel: Trainer.SelfLevel?) {
+    func completeOnboarding(age: Trainer.AgeBand?, level: UserLevel?) {
         profile.ageBand = age
-        profile.selfLevel = selfLevel
+        profile.selfLevel = level?.trainerLevel
+        // The level is a property of the person, not of the trainer: the same
+        // answer drives the interview ladder's register.
+        Settings.shared.userLevel = level
         profile.onboardingDone = true
         persist()
-        Log.d("trainer: onboarding age=\(age?.rawValue ?? "-") self=\(selfLevel?.rawValue ?? "-")")
+        Log.d("trainer: onboarding age=\(age?.rawValue ?? "-") level=\(level?.rawValue ?? "-")")
         nextTask()
     }
 
@@ -133,7 +143,7 @@ final class TrainerController: ObservableObject {
         // During the probe the difficulty comes from the self-assessment, not
         // from the (still empty) map.
         let level = probeIndex != nil
-            ? Trainer.probeSeedLevel(for: profile.selfLevel)
+            ? Trainer.probeSeedLevel(for: effectiveSelfLevel)
             : profile.level(of: topic)
         run(collectInto: \.taskText,
             userText: TrainerPrompts.generateTask(
@@ -236,7 +246,7 @@ final class TrainerController: ObservableObject {
         // Unprobed topics take the self-assessment prior, so an experienced
         // person is not dragged through OOP from zero. The first real task per
         // topic corrects it either way.
-        let prior = Trainer.priorLevel(for: profile.selfLevel)
+        let prior = Trainer.priorLevel(for: effectiveSelfLevel)
         for topic in Trainer.Topic.allCases where map[topic.rawValue] == nil {
             map[topic.rawValue] = prior
         }
@@ -245,7 +255,7 @@ final class TrainerController: ObservableObject {
         profile.probeVerdicts = nil
         probeIndex = nil
 
-        switch Trainer.probeSurprise(selfLevel: profile.selfLevel, verdicts: probeVerdicts) {
+        switch Trainer.probeSurprise(selfLevel: effectiveSelfLevel, verdicts: probeVerdicts) {
         case .higher:
             probeNote = L("The probe showed a higher level than you said — the map follows your actual answers.")
         case .lower:

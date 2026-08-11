@@ -92,6 +92,11 @@ final class Localization: ObservableObject {
     // MARK: - Tables (English key → translation)
 
     static let ru: [String: String] = [
+        "Profile": "Профиль",
+        "Level": "Уровень",
+        "Not set": "Не выбран",
+        "One level for the whole app: how the hint ladder writes its solutions, and where the training starts. The training probe still measures per topic. Stays on this Mac.":
+            "Один уровень на всё приложение: каким будет код решений в подсказках и с чего начнётся тренировка. Проба в тренировке всё равно замеряет по темам. Остаётся на этом Mac.",
         "Ready to train": "Готов тренироваться",
         "Something went wrong": "Что-то пошло не так",
         "Name (optional)": "Имя (необязательно)",
@@ -368,6 +373,11 @@ final class Localization: ObservableObject {
     ]
 
     static let uk: [String: String] = [
+        "Profile": "Профіль",
+        "Level": "Рівень",
+        "Not set": "Не обрано",
+        "One level for the whole app: how the hint ladder writes its solutions, and where the training starts. The training probe still measures per topic. Stays on this Mac.":
+            "Один рівень на весь застосунок: яким буде код розв'язків у підказках і з чого почнеться тренування. Проба в тренуванні все одно вимірює за темами. Лишається на цьому Mac.",
         "Ready to train": "Готовий тренуватися",
         "Something went wrong": "Щось пішло не так",
         "Name (optional)": "Ім'я (необов'язково)",

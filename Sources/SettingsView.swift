@@ -11,7 +11,7 @@ struct SettingsView: View {
     @State private var apiKeyError: String?
     @State private var hotkeyName = Settings.shared.hotkeyName
     @State private var language = Settings.shared.solutionLanguage ?? ""
-    @State private var seniority = Settings.shared.seniority
+    @State private var userLevel = Settings.shared.userLevel
     @State private var straightToSolution = Settings.shared.straightToSolution
     @State private var codeOnly = Settings.shared.codeOnly
     @State private var historyEnabled = Settings.shared.historyEnabled
@@ -35,11 +35,23 @@ struct SettingsView: View {
                 .onChange(of: uiLanguage) { _, new in
                     Localization.shared.setLanguage(new)
                 }
+            }
+
+            Section(L("Profile")) {
                 TextField(L("Name (optional)"), text: $userName)
                     .onChange(of: userName) { _, new in
                         Settings.shared.userName = new
                     }
-                Text(L("The trainer's mentor will use it. Stays on this Mac."))
+                Picker(L("Level"), selection: $userLevel) {
+                    Text(L("Not set")).tag(UserLevel?.none)
+                    ForEach(UserLevel.allCases, id: \.self) { level in
+                        Text(level.title).tag(UserLevel?.some(level))
+                    }
+                }
+                .onChange(of: userLevel) { _, new in
+                    Settings.shared.userLevel = new
+                }
+                Text(L("One level for the whole app: how the hint ladder writes its solutions, and where the training starts. The training probe still measures per topic. Stays on this Mac."))
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
             }
@@ -135,18 +147,6 @@ struct SettingsView: View {
                 .onChange(of: language) { _, new in
                     Settings.shared.solutionLanguage = new.isEmpty ? nil : new
                 }
-
-                Picker(L("Solution register"), selection: $seniority) {
-                    ForEach(Seniority.allCases, id: \.self) { s in
-                        Text(s.title).tag(s)
-                    }
-                }
-                .onChange(of: seniority) { _, new in
-                    Settings.shared.seniority = new
-                }
-                Text(L("What grade the solution code targets: junior — simple and readable, senior — invariants and trade-offs."))
-                    .font(.system(size: 10))
-                    .foregroundStyle(.tertiary)
 
                 Toggle(L("Code only, no explanations"), isOn: $codeOnly)
                     .onChange(of: codeOnly) { _, new in

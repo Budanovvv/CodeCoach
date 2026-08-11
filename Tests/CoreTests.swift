@@ -373,6 +373,39 @@ private extension Trainer.Topic {
     static let loopsTopicForTest = Trainer.Topic.conditionsAndLoops
 }
 
+final class UserLevelTests: XCTestCase {
+    /// Every step must land on some register and some trainer level — the
+    /// switch statements guarantee it, this guards against a new case being
+    /// added to one mapping and forgotten in the other.
+    func testEveryLevelMapsToBothSurfaces() {
+        for level in UserLevel.allCases {
+            _ = level.seniority
+            _ = level.trainerLevel
+        }
+    }
+
+    func testLearnersGetJuniorRegister() {
+        XCTAssertEqual(UserLevel.beginner.seniority, .junior)
+        XCTAssertEqual(UserLevel.basics.seniority, .junior)
+        XCTAssertEqual(UserLevel.confident.seniority, .middle)
+        XCTAssertEqual(UserLevel.pro.seniority, .senior)
+    }
+
+    func testTrainerLevelRoundTrips() {
+        for level in UserLevel.allCases {
+            XCTAssertEqual(UserLevel(trainerLevel: level.trainerLevel), level)
+        }
+    }
+
+    /// Seniority migration is lossy by design (3 → 4 steps), but must stay
+    /// stable: migrating and mapping back yields the original register.
+    func testSeniorityMigrationPreservesRegister() {
+        for old in Seniority.allCases {
+            XCTAssertEqual(UserLevel(seniority: old).seniority, old)
+        }
+    }
+}
+
 final class CodeAssistTests: XCTestCase {
 
     func testCompletionsMixDictionaryAndDocumentWords() {

@@ -46,11 +46,28 @@ final class Settings {
         set { d.set(newValue ?? "", forKey: "userName") }
     }
 
-    /// What grade the level-3 solution should be written for.
-    var seniority: Seniority {
-        get { d.string(forKey: "seniority").flatMap(Seniority.init) ?? .middle }
-        set { d.set(newValue.rawValue, forKey: "seniority") }
+    /// The system-wide skill level (see UserLevel). Master value for both the
+    /// interview register and the trainer's starting point. Migrates once from
+    /// the pre-unification "seniority" key.
+    var userLevel: UserLevel? {
+        get {
+            if let raw = d.string(forKey: "userLevel"), !raw.isEmpty {
+                return UserLevel(rawValue: raw)
+            }
+            if let raw = d.string(forKey: "seniority"), let old = Seniority(rawValue: raw) {
+                let migrated = UserLevel(seniority: old)
+                d.set(migrated.rawValue, forKey: "userLevel")
+                d.removeObject(forKey: "seniority")
+                return migrated
+            }
+            return nil
+        }
+        set { d.set(newValue?.rawValue ?? "", forKey: "userLevel") }
     }
+
+    /// What grade the level-3 solution should be written for — derived from
+    /// the profile level; middle when the person has not said.
+    var seniority: Seniority { userLevel?.seniority ?? .middle }
 
     /// Level-3 answers carry only the code block — no prose around it. Faster
     /// (fewer tokens to generate) and pasteable as-is.
