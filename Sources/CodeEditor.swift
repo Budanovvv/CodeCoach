@@ -27,6 +27,9 @@ struct CodeEditor: NSViewRepresentable {
         textView.allowsUndo = true
         textView.textContainerInset = NSSize(width: 6, height: 8)
         textView.delegate = ctx.coordinator
+        textView.completionProvider = { [weak coordinator = ctx.coordinator] prefix, document in
+            coordinator?.candidates(for: prefix, in: document) ?? []
+        }
 
         textView.autoresizingMask = [.width]
         textView.isVerticallyResizable = true
@@ -66,18 +69,8 @@ struct CodeEditor: NSViewRepresentable {
             parent.text = textView.string
         }
 
-        func textView(
-            _ textView: NSTextView,
-            completions words: [String],
-            forPartialWordRange charRange: NSRange,
-            indexOfSelectedItem index: UnsafeMutablePointer<Int>?
-        ) -> [String] {
-            guard let range = Range(charRange, in: textView.string) else { return [] }
-            index?.pointee = 0
-            return CodeAssist.completions(
-                for: String(textView.string[range]),
-                document: textView.string,
-                context: contextText)
+        func candidates(for prefix: String, in document: String) -> [String] {
+            CodeAssist.completions(for: prefix, document: document, context: contextText)
         }
     }
 }
@@ -86,9 +79,9 @@ struct CodeEditor: NSViewRepresentable {
 /// behaviours, not text-storage observations.
 final class PythonTextView: NSTextView {
 
-    /// Suppresses completion auto-popup while a completion session inserts its
-    /// own text — otherwise accepting a candidate immediately reopens the list.
-    private var isInsertingCompletion = false
+    var completionProvider: ((String, String) -> [String])?
+    private let completionPanel = CompletionPanel()
+    private var panelConfigured = false
 
     override func insertText(_ insertString: Any, replacementRange: NSRange) {
         let typed = (insertString as? String)
@@ -121,23 +114,78 @@ final class PythonTextView: NSTextView {
         }
 
         super.insertText(insertString, replacementRange: replacementRange)
-
-        // Auto-popup: two identifier characters are enough to complete from.
-        if !isInsertingCompletion, typed.count == 1, let ch = typed.first,
-           ch.isLetter || ch == "_",
-           rangeForUserCompletion.length >= 2 {
-            complete(nil)
-        }
+        refreshCompletions()
     }
 
-    override func insertCompletion(
-        _ word: String, forPartialWordRange charRange: NSRange,
-        movement: Int, isFinal flag: Bool
-    ) {
-        isInsertingCompletion = true
-        super.insertCompletion(word, forPartialWordRange: charRange,
-                               movement: movement, isFinal: flag)
-        isInsertingCompletion = false
+    // MARK: - Passive completion popup
+
+    private func configurePanelIfNeeded() {
+        guard !panelConfigured else { return }
+        panelConfigured = true
+        completionPanel.onAccept = { [weak self] word in self?.accept(word) }
+    }
+
+    /// Recomputes candidates for the word before the caret and shows, updates
+    /// or hides the panel. Called after every text change — the panel follows
+    /// the text instead of interrupting it.
+    private func refreshCompletions() {
+        configurePanelIfNeeded()
+        let range = rangeForUserCompletion
+        guard range.length >= 2, range.location != NSNotFound,
+              let swiftRange = Range(range, in: string),
+              let provider = completionProvider
+        else { return completionPanel.hide() }
+
+        let prefix = String(string[swiftRange])
+        let words = provider(prefix, string)
+        guard !words.isEmpty else { return completionPanel.hide() }
+        let caret = firstRect(forCharacterRange: selectedRange(), actualRange: nil)
+        completionPanel.show(words, under: caret, attachedTo: window)
+    }
+
+    private func accept(_ word: String) {
+        let range = rangeForUserCompletion
+        guard range.location != NSNotFound,
+              shouldChangeText(in: range, replacementString: word) else { return }
+        textStorage?.replaceCharacters(in: range, with: word)
+        didChangeText()
+        setSelectedRange(NSRange(location: range.location + (word as NSString).length, length: 0))
+        completionPanel.hide()
+    }
+
+    /// While the panel is up, the keys that operate it must not reach the
+    /// text: arrows navigate the list, Return/Tab accept, Esc dismisses.
+    /// Everything else falls through and re-filters via didChangeText.
+    override func keyDown(with event: NSEvent) {
+        if completionPanel.isVisible {
+            switch event.keyCode {
+            case 125: return completionPanel.moveSelection(by: 1)    // down
+            case 126: return completionPanel.moveSelection(by: -1)   // up
+            case 36, 48:                                             // return, tab
+                if let word = completionPanel.selected { accept(word) }
+                return
+            case 53:                                                 // esc
+                return completionPanel.hide()
+            default:
+                break
+            }
+        }
+        super.keyDown(with: event)
+    }
+
+    override func deleteBackward(_ sender: Any?) {
+        super.deleteBackward(sender)
+        if completionPanel.isVisible { refreshCompletions() }
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        completionPanel.hide()
+        super.mouseDown(with: event)
+    }
+
+    override func resignFirstResponder() -> Bool {
+        completionPanel.hide()
+        return super.resignFirstResponder()
     }
 
     override func insertNewline(_ sender: Any?) {

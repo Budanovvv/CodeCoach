@@ -92,6 +92,11 @@ final class Localization: ObservableObject {
     // MARK: - Tables (English key → translation)
 
     static let ru: [String: String] = [
+        "Ready to train": "Готов тренироваться",
+        "Something went wrong": "Что-то пошло не так",
+        "Name (optional)": "Имя (необязательно)",
+        "The trainer's mentor will use it. Stays on this Mac.":
+            "Наставник в тренировке будет обращаться по имени. Остаётся на этом Mac.",
         "%@: %@ — click to train this topic next":
             "%@: %@ — нажми, чтобы тренировать эту тему следующей",
         "Under 13": "До 12",
@@ -363,6 +368,11 @@ final class Localization: ObservableObject {
     ]
 
     static let uk: [String: String] = [
+        "Ready to train": "Готовий тренуватися",
+        "Something went wrong": "Щось пішло не так",
+        "Name (optional)": "Ім'я (необов'язково)",
+        "The trainer's mentor will use it. Stays on this Mac.":
+            "Наставник у тренуванні звертатиметься на ім'я. Лишається на цьому Mac.",
         "%@: %@ — click to train this topic next":
             "%@: %@ — натисни, щоб тренувати цю тему наступною",
         "Under 13": "До 12",

@@ -10,7 +10,6 @@ struct TrainerView: View {
     var body: some View {
         if controller.profile.needsOnboarding {
             onboarding
-                .padding(20)
                 .frame(minWidth: 560, idealWidth: 660, minHeight: 540, idealHeight: 720)
         } else {
             main
@@ -20,34 +19,51 @@ struct TrainerView: View {
     /// Two optional questions and a start button — deliberately nothing more.
     /// Both answers only tune the starting point; the probe's results win.
     private var onboarding: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(L("Quick setup")).font(.system(size: 16, weight: .semibold))
-            Text(L("Two optional questions to pick the right tone and difficulty. A short probe follows and adjusts everything to your actual level."))
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Picker(L("Age (optional)"), selection: $onboardingAge) {
-                Text(L("Prefer not to say")).tag(Trainer.AgeBand?.none)
-                ForEach(Trainer.AgeBand.allCases, id: \.self) { band in
-                    Text(band.title).tag(Trainer.AgeBand?.some(band))
+        VStack(alignment: .leading, spacing: 0) {
+            Form {
+                Section {
+                    Picker(L("Age (optional)"), selection: $onboardingAge) {
+                        Text(L("Prefer not to say")).tag(Trainer.AgeBand?.none)
+                        ForEach(Trainer.AgeBand.allCases, id: \.self) { band in
+                            Text(band.title).tag(Trainer.AgeBand?.some(band))
+                        }
+                    }
+                    Picker(L("How well do you know Python? (optional)"), selection: $onboardingLevel) {
+                        Text(L("Prefer not to say")).tag(Trainer.SelfLevel?.none)
+                        ForEach(Trainer.SelfLevel.allCases, id: \.self) { level in
+                            Text(level.title).tag(Trainer.SelfLevel?.some(level))
+                        }
+                    }
+                } header: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(L("Quick setup")).font(.system(size: 16, weight: .semibold))
+                        Text(L("Two optional questions to pick the right tone and difficulty. A short probe follows and adjusts everything to your actual level."))
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .textCase(nil)
+                    }
+                    .padding(.bottom, 6)
+                } footer: {
+                    Text(L("Everything stays on this Mac and is used only to pick the tone and task difficulty."))
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
                 }
             }
-            Picker(L("How well do you know Python? (optional)"), selection: $onboardingLevel) {
-                Text(L("Prefer not to say")).tag(Trainer.SelfLevel?.none)
-                ForEach(Trainer.SelfLevel.allCases, id: \.self) { level in
-                    Text(level.title).tag(Trainer.SelfLevel?.some(level))
+            .formStyle(.grouped)
+            .scrollDisabled(true)
+
+            HStack {
+                Spacer()
+                Button(L("Start")) {
+                    controller.completeOnboarding(age: onboardingAge, selfLevel: onboardingLevel)
                 }
+                .buttonStyle(.borderedProminent)
+                .tint(Brand.accent)
+                .keyboardShortcut(.defaultAction)
             }
-
-            Text(L("Everything stays on this Mac and is used only to pick the tone and task difficulty."))
-                .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
-
-            Button(L("Start")) {
-                controller.completeOnboarding(age: onboardingAge, selfLevel: onboardingLevel)
-            }
-            .keyboardShortcut(.defaultAction)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 16)
             Spacer(minLength: 0)
         }
     }
@@ -173,18 +189,38 @@ struct TrainerView: View {
             VStack(alignment: .leading, spacing: 12) {
                 switch controller.phase {
                 case .idle:
-                    Text(controller.probeIndex != nil
-                         ? L("A few short tasks to see what you already know. Write code right here in the field below; when ready, hit “Check”.")
-                         : L("Hit “Next” to get a task at your level."))
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
+                    ContentUnavailableView {
+                        Label(controller.probeIndex != nil
+                              ? L("Getting to know you") : L("Ready to train"),
+                              systemImage: "graduationcap")
+                    } description: {
+                        Text(controller.probeIndex != nil
+                             ? L("A few short tasks to see what you already know. Write code right here in the field below; when ready, hit “Check”.")
+                             : L("Hit “Next” to get a task at your level."))
+                    } actions: {
+                        Button(controller.probeIndex != nil ? L("Start") : L("Next")) {
+                            controller.nextTask()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(Brand.accent)
+                        .keyboardShortcut(.defaultAction)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 320)
                 case .failed(let message):
-                    Label(message, systemImage: "exclamationmark.triangle")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.orange)
+                    ContentUnavailableView {
+                        Label(L("Something went wrong"), systemImage: "exclamationmark.triangle")
+                    } description: {
+                        Text(message)
+                    } actions: {
+                        Button(L("Retry")) { controller.recoverFromFailure() }
+                            .buttonStyle(.borderedProminent)
+                            .tint(Brand.accent)
+                            .keyboardShortcut(.defaultAction)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 320)
                 default:
                     if !controller.taskText.isEmpty {
-                        answerSegments(controller.taskText)
+                        answerSegments(displayTask)
                             .padding(12)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .background(RoundedRectangle(cornerRadius: 10).fill(.quaternary.opacity(0.4)))
@@ -205,6 +241,17 @@ struct TrainerView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    /// The TITLE: marker is a parsing contract, not something the learner
+    /// should read — the display renders the name bold and drops the marker.
+    private var displayTask: String {
+        let text = controller.taskText
+        guard let newline = text.firstIndex(of: "\n"),
+              text.hasPrefix("TITLE:") else { return text }
+        let name = text[text.index(text.startIndex, offsetBy: 6)..<newline]
+            .trimmingCharacters(in: .whitespaces)
+        return "**\(name)**" + text[newline...]
     }
 
     private func answerSegments(_ text: String) -> some View {
@@ -236,32 +283,34 @@ struct TrainerView: View {
 
     // MARK: - Buttons
 
+    /// One prominent action per row (the check), secondaries to its left,
+    /// session flow on the far left — and nothing here for idle/failed, those
+    /// states carry their own action next to their message.
+    @ViewBuilder
     private var buttons: some View {
-        HStack(spacing: 10) {
-            if case .failed = controller.phase {
-                Button(L("Retry")) { controller.recoverFromFailure() }
-                    .keyboardShortcut(.defaultAction)
-            } else if controller.phase == .idle {
-                Button(controller.probeIndex != nil ? L("Start") : L("Next")) {
-                    controller.nextTask()
-                }
-                .keyboardShortcut(.defaultAction)
-            } else {
-                Button(L("Check")) { controller.review() }
-                    .disabled(controller.isBusy || controller.taskText.isEmpty
-                              || controller.codeInput.trimmingCharacters(
-                                  in: .whitespacesAndNewlines).isEmpty)
-                Button(L("Nudge")) { controller.hint() }
-                    .disabled(controller.isBusy || controller.taskText.isEmpty)
-                Button(L("I give up")) { controller.giveUp() }
-                    .disabled(controller.isBusy || controller.taskText.isEmpty)
-                Spacer()
+        switch controller.phase {
+        case .idle, .failed:
+            EmptyView()
+        default:
+            HStack(spacing: 10) {
                 if controller.isBusy {
                     Button(L("Stop")) { controller.cancel() }
                 } else {
                     Button(L("Next →")) { controller.nextTask() }
                         .disabled(controller.taskText.isEmpty)
                 }
+                Spacer()
+                Button(L("Nudge")) { controller.hint() }
+                    .disabled(controller.isBusy || controller.taskText.isEmpty)
+                Button(L("I give up")) { controller.giveUp() }
+                    .disabled(controller.isBusy || controller.taskText.isEmpty)
+                Button(L("Check")) { controller.review() }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Brand.accent)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(controller.isBusy || controller.taskText.isEmpty
+                              || controller.codeInput.trimmingCharacters(
+                                  in: .whitespacesAndNewlines).isEmpty)
             }
         }
     }

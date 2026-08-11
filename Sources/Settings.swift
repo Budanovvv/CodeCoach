@@ -35,6 +35,17 @@ final class Settings {
         set { d.set(newValue ?? "", forKey: "solutionLanguage") }
     }
 
+    /// How the person wants to be addressed. Optional; the trainer's mentor
+    /// uses it, and an empty value simply means "no name".
+    var userName: String? {
+        get {
+            guard let v = d.string(forKey: "userName"),
+                  !v.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+            return v
+        }
+        set { d.set(newValue ?? "", forKey: "userName") }
+    }
+
     /// What grade the level-3 solution should be written for.
     var seniority: Seniority {
         get { d.string(forKey: "seniority").flatMap(Seniority.init) ?? .middle }

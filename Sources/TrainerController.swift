@@ -269,7 +269,9 @@ final class TrainerController: ObservableObject {
             var collected = ""
             do {
                 try await ClaudeCodeCLI.run(
-                    system: TrainerPrompts.system(age: self.profile.ageBand), userText: userText,
+                    system: TrainerPrompts.system(
+                        age: self.profile.ageBand, name: Settings.shared.userName),
+                    userText: userText,
                     imagePNG: imagePNG, model: "sonnet", label: "trainer"
                 ) { [weak self] event in
                     guard case .text(let text) = event else { return }

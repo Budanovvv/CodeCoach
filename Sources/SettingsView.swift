@@ -5,6 +5,7 @@ struct SettingsView: View {
     @StateObject private var keyCapture = KeyCapture()
     @ObservedObject private var loc = Localization.shared
     @State private var uiLanguage = Localization.shared.language
+    @State private var userName = Settings.shared.userName ?? ""
     @State private var apiKeyField = ""
     @State private var apiKeySaved = Settings.shared.apiKey != nil
     @State private var apiKeyError: String?
@@ -34,6 +35,13 @@ struct SettingsView: View {
                 .onChange(of: uiLanguage) { _, new in
                     Localization.shared.setLanguage(new)
                 }
+                TextField(L("Name (optional)"), text: $userName)
+                    .onChange(of: userName) { _, new in
+                        Settings.shared.userName = new
+                    }
+                Text(L("The trainer's mentor will use it. Stays on this Mac."))
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
             }
 
             Section(L("Permissions")) {

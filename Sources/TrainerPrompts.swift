@@ -11,7 +11,7 @@ enum TrainerPrompts {
     /// Stable across every trainer request for a given profile. Nothing
     /// volatile may go in here — the answer-language rule and the age register
     /// are stable for as long as the settings are.
-    static func system(age: Trainer.AgeBand?) -> String {
+    static func system(age: Trainer.AgeBand?, name: String? = nil) -> String {
         let register: String
         switch age {
         case .some(.child):
@@ -37,12 +37,15 @@ enum TrainerPrompts {
             anyone. Tasks about everyday things: messages, games, lists, music.
             """
         }
+        let nameLine = name.map {
+            "The learner's name is \($0) — use it now and then, naturally, not in every sentence."
+        } ?? ""
         return """
         You are a patient Python mentor. The learner's knowledge is patchy: \
         some things they know well, some they have never seen. Your job is that \
         they FIGURE THINGS OUT themselves, with you steering.
 
-        \(register)
+        \(register) \(nameLine)
 
         Rules:
         - \(Localization.shared.answerRule) Code and function names stay in \
