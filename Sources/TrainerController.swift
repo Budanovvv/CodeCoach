@@ -31,6 +31,10 @@ final class TrainerController: ObservableObject {
     /// The probe list sized by the self-assessment.
     var activeProbeTopics: [Trainer.Topic] { Trainer.probeTopics(for: profile.selfLevel) }
 
+    /// Topic explicitly chosen by clicking its chip; overrides the automatic
+    /// weakest-topic pick for the next task, then clears.
+    private var chosenTopic: Trainer.Topic?
+
     /// Verdict of the latest review of the current task; drives the map update
     /// when the learner moves on.
     private var lastVerdict: Trainer.Verdict?
@@ -43,8 +47,17 @@ final class TrainerController: ObservableObject {
         .appendingPathComponent("CodeCoach/trainer.json")
 
     init() {
-        profile = Self.loadProfile()
-        probeIndex = profile.probeDone ? nil : 0
+        let loaded = Self.loadProfile()
+        profile = loaded
+        // Resume the probe where it stopped: the settled verdicts are the
+        // position. A fresh counter after a relaunch read as a broken one.
+        for (raw, verdictRaw) in loaded.probeVerdicts ?? [:] {
+            if let topic = Trainer.Topic(rawValue: raw),
+               let verdict = Trainer.Verdict(rawValue: verdictRaw) {
+                probeVerdicts[topic] = verdict
+            }
+        }
+        probeIndex = loaded.probeDone ? nil : probeVerdicts.count
     }
 
     var isBusy: Bool { phase == .generating || phase == .responding }
@@ -67,7 +80,9 @@ final class TrainerController: ObservableObject {
         profile.onboardingDone = false
         profile.probeDone = false
         profile.map = [:]
+        profile.probeVerdicts = nil
         probeVerdicts = [:]
+        chosenTopic = nil
         probeIndex = 0
         currentTopic = nil
         taskText = ""
@@ -102,8 +117,9 @@ final class TrainerController: ObservableObject {
                 topic = activeProbeTopics[index]
             }
         } else {
-            topic = Trainer.nextTopic(for: profile)
+            topic = chosenTopic ?? Trainer.nextTopic(for: profile)
         }
+        chosenTopic = nil
         currentTopic = topic
         lastVerdict = nil
         gaveUp = false
@@ -161,6 +177,26 @@ final class TrainerController: ObservableObject {
         streamResponse(TrainerPrompts.solution(taskText: taskText), imagePNG: nil)
     }
 
+    /// The way out of a failed request. A failed GENERATION left no task, so
+    /// every button used to be disabled — a dead end the owner hit mid-probe.
+    func recoverFromFailure() {
+        guard case .failed = phase else { return }
+        if taskText.isEmpty {
+            phase = .idle
+            nextTask()          // regenerate the same position
+        } else {
+            phase = .working    // task intact — the failure was a review/hint
+        }
+    }
+
+    /// Chip click: train THIS topic next. Not during the probe (its sequence
+    /// is the measurement) and not mid-request.
+    func chooseTopic(_ topic: Trainer.Topic) {
+        guard probeIndex == nil, !isBusy else { return }
+        chosenTopic = topic
+        nextTask()
+    }
+
     func cancel() {
         task?.cancel()
         task = nil
@@ -182,6 +218,9 @@ final class TrainerController: ObservableObject {
 
         if let index = probeIndex {
             probeVerdicts[topic] = gaveUp ? .failed : verdict
+            profile.probeVerdicts = probeVerdicts.reduce(into: [:]) {
+                $0[$1.key.rawValue] = $1.value.rawValue
+            }
             probeIndex = index + 1
         } else {
             profile = Trainer.updated(profile, topic: topic, verdict: verdict, gaveUp: gaveUp)
@@ -203,6 +242,7 @@ final class TrainerController: ObservableObject {
         }
         profile.map = map
         profile.probeDone = true
+        profile.probeVerdicts = nil
         probeIndex = nil
 
         switch Trainer.probeSurprise(selfLevel: profile.selfLevel, verdicts: probeVerdicts) {

@@ -101,6 +101,10 @@ enum Trainer {
         var ageBand: AgeBand?
         var selfLevel: SelfLevel?
         var onboardingDone: Bool?
+        /// Probe answers settled so far (topic raw → verdict raw). Persisted so
+        /// quitting mid-probe resumes at the same task instead of restarting
+        /// the counter — which read as "it broke".
+        var probeVerdicts: [String: String]?
 
         func level(of topic: Topic) -> Level { map[topic.rawValue] ?? .notStarted }
         mutating func set(_ topic: Topic, to level: Level) { map[topic.rawValue] = level }

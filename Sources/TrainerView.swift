@@ -132,17 +132,28 @@ struct TrainerView: View {
     private func topicChip(_ topic: Trainer.Topic) -> some View {
         let level = controller.profile.level(of: topic)
         let isCurrent = controller.currentTopic == topic
-        return HStack(spacing: 4) {
-            Circle()
-                .fill(chipColor(level))
-                .frame(width: 7, height: 7)
-            Text(topic.title).font(.system(size: 10.5))
+        // Clickable outside the probe: the learner picks what to train next;
+        // untouched, the weakest topic is picked automatically.
+        let clickable = controller.probeIndex == nil && !controller.isBusy
+        return Button {
+            controller.chooseTopic(topic)
+        } label: {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(chipColor(level))
+                    .frame(width: 7, height: 7)
+                Text(topic.title).font(.system(size: 10.5))
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(.quaternary.opacity(isCurrent ? 1 : 0.45)))
+            .overlay(isCurrent ? Capsule().strokeBorder(Brand.accent, lineWidth: 1) : nil)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(Capsule().fill(.quaternary.opacity(isCurrent ? 1 : 0.45)))
-        .overlay(isCurrent ? Capsule().strokeBorder(Brand.accent, lineWidth: 1) : nil)
-        .help("\(topic.title): \(level.title)")
+        .buttonStyle(.plain)
+        .disabled(!clickable)
+        .help(clickable
+              ? LF("%@: %@ — click to train this topic next", topic.title, level.title)
+              : "\(topic.title): \(level.title)")
     }
 
     private func chipColor(_ level: Trainer.Level) -> Color {
@@ -227,7 +238,10 @@ struct TrainerView: View {
 
     private var buttons: some View {
         HStack(spacing: 10) {
-            if controller.phase == .idle {
+            if case .failed = controller.phase {
+                Button(L("Retry")) { controller.recoverFromFailure() }
+                    .keyboardShortcut(.defaultAction)
+            } else if controller.phase == .idle {
                 Button(controller.probeIndex != nil ? L("Start") : L("Next")) {
                     controller.nextTask()
                 }
