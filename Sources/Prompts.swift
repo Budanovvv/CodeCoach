@@ -64,6 +64,7 @@ enum Prompts {
         for level: HintLevel, language: String?, seniority: Seniority = .middle,
         codeOnly: Bool = false
     ) -> String {
+        let answerLine = "\nAnswer in \(Localization.shared.answerLanguageName)."
         let langLine = language.map {
             "\nSolution language: \($0). If the screenshot clearly shows a different language — use the one on screen."
         } ?? "\nDetermine the solution language from the screenshot (from the function template or the code already written)."
@@ -82,6 +83,7 @@ enum Prompts {
 
             FORBIDDEN: a step-by-step algorithm, pseudocode, code, complexity \
             analysis. At most 120 words.
+            \(answerLine)
             """
 
         case .approach:
@@ -96,6 +98,7 @@ enum Prompts {
 
             FORBIDDEN: finished code, or pseudocode close enough to transcribe. \
             The person must write the code themselves. At most 250 words.
+            \(answerLine)
             """
 
         case .solution:
@@ -158,7 +161,7 @@ enum Prompts {
                 analysis, no advice. Short comments inside the code are fine \
                 where the logic is not obvious. The single exception: \(importsLine)
 
-                \(style)
+                \(style)\(answerLine)
                 """
             }
             return """
@@ -173,7 +176,7 @@ enum Prompts {
             interviewer starts probing (why this complexity, what changes under \
             a different constraint).
 
-            \(style)
+            \(style)\(answerLine)
             """
         }
     }

@@ -77,6 +77,18 @@ final class Localization: ObservableObject {
         }
     }
 
+    /// The answer language, named for embedding into user messages. The
+    /// system-prompt rule alone loses to stray language cues inside the user
+    /// message (a Russian task title in the avoid-list flipped whole answers) —
+    /// each request states its language explicitly.
+    var answerLanguageName: String {
+        switch resolved {
+        case .ru: return "Russian (русский)"
+        case .uk: return "Ukrainian (українська)"
+        default: return "English"
+        }
+    }
+
     // MARK: - Tables (English key → translation)
 
     static let ru: [String: String] = [

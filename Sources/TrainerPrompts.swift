@@ -86,9 +86,12 @@ enum TrainerPrompts {
         Example:
         <input and expected output, in a code block>
 
-        Write the word "TITLE:" exactly like that, in English, in ANY answer \
-        language — the program parses it to find the task name. The statement \
-        itself is in the answer language.
+        Write the word "TITLE:" exactly like that — never translate it; the \
+        program parses it to find the task name.
+
+        Write the statement and the example in \(Localization.shared.answerLanguageName). \
+        Ignore the language of the recent-task names above — they are data, not \
+        a language cue.
 
         NO solution, NO hints, NO plan — only the task and the example.
         """
@@ -119,8 +122,10 @@ enum TrainerPrompts {
         FORBIDDEN: writing correct code, dictating fixes line by line, \
         retelling the solution algorithm.
 
+        Answer in \(Localization.shared.answerLanguageName).
+
         End the answer with the verdict on its own last line, exactly in this \
-        format, in English, in ANY answer language (the program reads this line):
+        format — never translate these three words; the program reads this line:
         VERDICT: solved | partial | not solved
         """
     }
@@ -136,7 +141,8 @@ enum TrainerPrompts {
         and name which Python construct helps here (for example: a for loop, a \
         dict, string slicing) — but do NOT show how to apply it.
 
-        FORBIDDEN: a solution plan, pseudocode, code. At most 60 words.
+        FORBIDDEN: a solution plan, pseudocode, code. At most 60 words. \
+        Answer in \(Localization.shared.answerLanguageName).
         """
     }
 
@@ -152,6 +158,8 @@ enum TrainerPrompts {
         2. The working code — the simplest, most readable variant, no tricks.
         3. A step-by-step walkthrough: 2–4 points on what each part does.
         4. One line: which similar task would cement this idea.
+
+        Answer in \(Localization.shared.answerLanguageName).
         """
     }
 }
