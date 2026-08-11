@@ -22,7 +22,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.valentynbudanov.CodeCoach
         PRODUCT_NAME: CodeCoach
-        MARKETING_VERSION: "0.2.0"
+        MARKETING_VERSION: "0.3.0"
         INFOPLIST_FILE: Sources/Info.plist
         SWIFT_VERSION: "5.0"
         MACOSX_DEPLOYMENT_TARGET: "15.0"
